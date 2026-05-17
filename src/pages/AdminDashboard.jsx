@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import AdminProductForm from '../components/AdminProductForm';
+import { useAuth } from '../context/AuthContext';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -13,13 +14,7 @@ export default function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
-
-  // Auth guard
-  useEffect(() => {
-    if (sessionStorage.getItem('abig_admin') !== 'true') {
-      navigate('/admin');
-    }
-  }, [navigate]);
+  const { logout } = useAuth();
 
   // Real-time listener
   useEffect(() => {
@@ -51,9 +46,13 @@ export default function AdminDashboard() {
     setDeleteId(null);
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('abig_admin');
-    navigate('/admin');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
   };
 
   return (

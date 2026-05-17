@@ -4,6 +4,7 @@ import { db } from '../config/firebase';
 import ProductCard from '../components/ProductCard';
 import WhatsAppModal from '../components/WhatsAppModal';
 import Loader from '../components/Loader';
+import { useCart } from '../context/CartContext';
 import './Shop.css';
 
 const ALL = 'All';
@@ -14,6 +15,16 @@ export default function Shop() {
   const [error, setError] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState(ALL);
+  const { addToCart } = useCart();
+  const [toastMessage, setToastMessage] = useState('');
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    setToastMessage(`Added "${product.name}" to cart!`);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 3000);
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
@@ -79,11 +90,24 @@ export default function Shop() {
         {!loading && !error && filtered.length > 0 && (
           <div className="products-grid">
             {filtered.map(product => (
-              <ProductCard key={product.id} product={product} onOrder={setSelectedProduct} />
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onOrder={setSelectedProduct} 
+                onAddToCart={handleAddToCart}
+              />
             ))}
           </div>
         )}
       </section>
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="cart-toast glass fade-in">
+          <span className="toast-emoji">✨</span>
+          <p>{toastMessage}</p>
+        </div>
+      )}
 
       {/* WhatsApp Modal */}
       <WhatsAppModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />

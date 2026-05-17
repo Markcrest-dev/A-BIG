@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const isAdmin = location.pathname.startsWith('/admin');
   const { currentUser, logout } = useAuth();
+  const { cartCount } = useCart();
+
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
+  const isAdmin = currentUser && currentUser.email.toLowerCase() === adminEmail.toLowerCase();
 
   const handleLogout = async () => {
     try {
@@ -42,40 +46,48 @@ export default function Navbar() {
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
             Home
           </Link>
-          <Link to="/shop" className={`nav-link ${location.pathname === '/shop' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-            Shop
-          </Link>
-          {!isAdmin && !currentUser && (
-            <>
-              <Link to="/auth" className={`nav-link ${location.pathname === '/auth' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                Login / Sign Up
-              </Link>
-              <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>
-                Admin
-              </Link>
-            </>
-          )}
-          {!isAdmin && currentUser && (
-            <>
-              <span className="nav-link user-email" style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                {currentUser.email}
-              </span>
-              <button 
-                onClick={() => { handleLogout(); setMenuOpen(false); }} 
-                className="nav-link btn-logout" 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}
-              >
-                Logout
-              </button>
-              <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>
-                Admin
-              </Link>
-            </>
-          )}
-          {isAdmin && (
-            <Link to="/" className="nav-link" onClick={() => setMenuOpen(false)}>
-              ← Back to Shop
+          
+          {/* Guest Links */}
+          {!currentUser && (
+            <Link to="/auth" className={`nav-link ${location.pathname === '/auth' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Login / Sign Up
             </Link>
+          )}
+
+          {/* Customer Links */}
+          {currentUser && !isAdmin && (
+            <>
+              <Link to="/customer/dashboard" className={`nav-link ${location.pathname === '/customer/dashboard' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                Dashboard
+              </Link>
+              <Link to="/customer/shop" className={`nav-link ${location.pathname === '/customer/shop' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                Shop
+              </Link>
+              <Link to="/customer/cart" className={`nav-link ${location.pathname === '/customer/cart' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                Cart {cartCount > 0 && <span className="cart-badge-nav">{cartCount}</span>}
+              </Link>
+              <Link to="/customer/settings" className={`nav-link ${location.pathname === '/customer/settings' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                Settings
+              </Link>
+            </>
+          )}
+
+          {/* Admin Links */}
+          {currentUser && isAdmin && (
+            <Link to="/admin/dashboard" className={`nav-link ${location.pathname === '/admin/dashboard' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              Admin Dashboard
+            </Link>
+          )}
+
+          {/* Logout Button */}
+          {currentUser && (
+            <button 
+              onClick={() => { handleLogout(); setMenuOpen(false); }} 
+              className="nav-link btn-logout" 
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}
+            >
+              Logout
+            </button>
           )}
         </div>
       </div>

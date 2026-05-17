@@ -23,7 +23,13 @@ export default function Auth() {
       } else {
         await signup(email, password);
       }
-      navigate('/');
+      
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
+      if (email.toLowerCase() === adminEmail.toLowerCase()) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/customer/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Failed to authenticate');
     }

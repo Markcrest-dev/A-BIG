@@ -38,3 +38,29 @@
 @media (max-width: 600px) {
   .products-grid { grid-template-columns: 1fr; }
 }
+
+.cart-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-gold);
+  z-index: 1000;
+  border: 1px solid rgba(212, 168, 67, 0.3);
+}
+
+.toast-emoji {
+  font-size: 1.25rem;
+  animation: float 2s ease-in-out infinite;
+}
+
+.cart-toast p {
+  font-size: 0.95rem;
+  color: var(--white);
+  font-weight: 500;
+}
+
