@@ -96,12 +96,15 @@ select.input-field { cursor: pointer; }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center; z-index: 1000;
+  padding: 16px;
   animation: fadeIn 0.25s ease;
 }
 .modal-content {
   background: var(--black-card); border: 1px solid rgba(212,168,67,0.15);
   border-radius: var(--radius-lg); padding: 32px; max-width: 480px; width: 90%;
   animation: slideUp 0.3s ease;
+  max-height: min(650px, 90vh);
+  overflow-y: auto;
 }
 
 /* ── Animations ── */
@@ -138,4 +141,9 @@ select.input-field { cursor: pointer; }
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
   .btn-lg { padding: 14px 28px; font-size: 1rem; }
+  .modal-content {
+    padding: 20px;
+    border-radius: var(--radius);
+    max-height: 92vh; /* Give slightly more room on small screen heights */
+  }
 }
