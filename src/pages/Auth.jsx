@@ -18,14 +18,55 @@ export default function Auth() {
     setError('');
     setLoading(true);
 
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+
     try {
       if (isLogin) {
-        await login(email, password);
+        try {
+          await login(email, password);
+        } catch (loginErr) {
+          // If the user tried to login with the correct admin credentials but the account doesn't exist yet,
+          // automatically attempt to sign them up to create the account.
+          if (
+            email.toLowerCase() === adminEmail.toLowerCase() &&
+            adminPassword &&
+            password === adminPassword &&
+            (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential' || loginErr.code === 'auth/user-disabled')
+          ) {
+            try {
+              await signup(email, password);
+            } catch (signupErr) {
+              if (signupErr.code === 'auth/operation-not-allowed') {
+                throw new Error("Firebase Email/Password authentication is disabled. Please enable it in the Firebase Console (Authentication > Sign-in method).");
+              }
+              throw signupErr;
+            }
+          } else {
+            if (loginErr.code === 'auth/operation-not-allowed') {
+              throw new Error("Firebase Email/Password authentication is disabled. Please enable it in the Firebase Console (Authentication > Sign-in method).");
+            }
+            // Standardize some cryptic Firebase error messages for better UX
+            if (loginErr.code === 'auth/invalid-credential' || loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/wrong-password') {
+              throw new Error("Invalid email or password. If this is your first time logging in as admin, double check your credentials or try Signing Up.");
+            }
+            throw loginErr;
+          }
+        }
       } else {
-        await signup(email, password);
+        try {
+          await signup(email, password);
+        } catch (signupErr) {
+          if (signupErr.code === 'auth/operation-not-allowed') {
+            throw new Error("Firebase Email/Password authentication is disabled. Please enable it in the Firebase Console (Authentication > Sign-in method).");
+          }
+          if (signupErr.code === 'auth/email-already-in-use') {
+            throw new Error("An account with this email already exists. Try logging in instead.");
+          }
+          throw signupErr;
+        }
       }
       
-      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
       if (email.toLowerCase() === adminEmail.toLowerCase()) {
         navigate('/admin/dashboard');
       } else {
