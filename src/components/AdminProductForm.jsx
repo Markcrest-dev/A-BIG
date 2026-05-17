@@ -41,6 +41,12 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
       return;
     }
 
+    const priceVal = parseFloat(form.price);
+    if (isNaN(priceVal) || priceVal <= 0) {
+      setError('Price must be a valid positive number.');
+      return;
+    }
+
     const stockVal = parseInt(form.stock, 10);
     if (isNaN(stockVal) || stockVal < 0) {
       setError('Stock must be a non-negative integer.');
@@ -64,10 +70,19 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
         setUploading(false);
       }
 
-      await onSubmit({ ...form, stock: stockVal, mediaUrl, mediaType });
+      await onSubmit({ ...form, price: priceVal, stock: stockVal, mediaUrl, mediaType });
     } catch (err) {
       setUploading(false);
-      setError(err.message || 'Something went wrong.');
+      
+      // Standardize common Firebase / Firestore setup errors for better developer/user guidance
+      let userFriendlyError = err.message || 'Something went wrong.';
+      if (err.message?.includes('NOT_FOUND') || err.code === 'not-found') {
+        userFriendlyError = 'Firestore database not found. ⚠️ Please go to the Firebase Console, select your project ("abig-glow-scents"), navigate to "Firestore Database" in the sidebar, and click "Create Database".';
+      } else if (err.message?.includes('permission') || err.code === 'permission-denied') {
+        userFriendlyError = 'Permission denied. ⚠️ Please check your Firestore Security Rules in the Firebase Console (Firestore Database > Rules) and ensure writes are permitted for authenticated admins.';
+      }
+      
+      setError(userFriendlyError);
     }
   };
 

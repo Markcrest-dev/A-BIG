@@ -19,7 +19,7 @@ export default function Home() {
           <p className="hero-subtitle slide-up delay-1">Where Elegance Meets Confidence</p>
           <p className="hero-quote slide-up delay-2">"Leave a Lasting Impression Everywhere You Go."</p>
           <div className="hero-actions slide-up delay-3">
-            <Link to="/shop" className="btn btn-gold btn-lg">
+            <Link to="/customer/shop" className="btn btn-gold btn-lg">
               Explore Collection
             </Link>
             <a href="#collections" className="btn btn-outline btn-lg">
@@ -69,7 +69,7 @@ export default function Home() {
               <span className="collection-subtitle">Aura of Elegance</span>
               <h3 className="collection-title">For Her</h3>
               <p className="collection-desc">Embrace the delicate, glowing essence of floral and radiant notes designed to captivate.</p>
-              <Link to="/shop" className="btn btn-gold btn-sm" style={{ width: 'fit-content' }}>Shop Women's</Link>
+              <Link to="/customer/shop" className="btn btn-gold btn-sm" style={{ width: 'fit-content' }}>Shop Women's</Link>
             </div>
           </div>
 
@@ -79,7 +79,7 @@ export default function Home() {
               <span className="collection-subtitle">Bold & Refined</span>
               <h3 className="collection-title">For Him</h3>
               <p className="collection-desc">A symphony of dark, sophisticated, and commanding notes for the modern gentleman.</p>
-              <Link to="/shop" className="btn btn-outline btn-sm" style={{ width: 'fit-content' }}>Shop Men's</Link>
+              <Link to="/customer/shop" className="btn btn-outline btn-sm" style={{ width: 'fit-content' }}>Shop Men's</Link>
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export default function Home() {
         <div className="cta-content container text-center">
           <h2 className="slide-up">Ready to Find Your Signature Scent?</h2>
           <p className="slide-up delay-1">Browse our full catalog and elevate your everyday presence.</p>
-          <Link to="/shop" className="btn btn-gold btn-lg slide-up delay-2" style={{ marginTop: '30px' }}>
+          <Link to="/customer/shop" className="btn btn-gold btn-lg slide-up delay-2" style={{ marginTop: '30px' }}>
             Visit the Shop
           </Link>
         </div>

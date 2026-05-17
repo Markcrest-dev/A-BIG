@@ -28,22 +28,39 @@ export default function AdminDashboard() {
 
   const handleAdd = async (data) => {
     setSaving(true);
-    await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
-    setSaving(false);
-    setShowForm(false);
+    try {
+      await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() });
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = async (data) => {
     if (!editProduct) return;
     setSaving(true);
-    await updateDoc(doc(db, 'products', editProduct.id), data);
-    setSaving(false);
-    setEditProduct(null);
+    try {
+      await updateDoc(doc(db, 'products', editProduct.id), data);
+      setEditProduct(null);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
-    await deleteDoc(doc(db, 'products', id));
-    setDeleteId(null);
+    try {
+      await deleteDoc(doc(db, 'products', id));
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const handleLogout = async () => {
