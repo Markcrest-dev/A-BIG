@@ -104,8 +104,6 @@ export default function Footer() {
             <p className="showcase-desc">
               Your signature scent is your unspoken introduction. Discover authentic luxury perfumes that leave an unforgettable trail.
             </p>
-ALos
-
         </div>
 
         {/* Custom Luxury Divider */}
