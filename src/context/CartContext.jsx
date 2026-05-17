@@ -38,13 +38,18 @@ export function CartProvider({ children }) {
   }, [cartItems, currentUser]);
 
   const addToCart = (product) => {
+    const maxStock = product.stock !== undefined ? product.stock : 999;
     setCartItems((prevItems) => {
       const existing = prevItems.find((item) => item.id === product.id);
       if (existing) {
+        if (existing.quantity >= maxStock) {
+          return prevItems;
+        }
         return prevItems.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
+      if (maxStock <= 0) return prevItems;
       return [...prevItems, { ...product, quantity: 1 }];
     });
   };
@@ -59,9 +64,14 @@ export function CartProvider({ children }) {
       return;
     }
     setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
+      prevItems.map((item) => {
+        if (item.id === productId) {
+          const maxStock = item.stock !== undefined ? item.stock : 999;
+          const allowedQty = Math.min(quantity, maxStock);
+          return { ...item, quantity: allowedQty };
+        }
+        return item;
+      })
     );
   };
 

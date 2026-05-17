@@ -10,6 +10,7 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
     price: initial?.price || '',
     description: initial?.description || '',
     category: initial?.category || CATEGORIES[0],
+    stock: initial?.stock !== undefined ? String(initial.stock) : '0',
   });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(initial?.mediaUrl || null);
@@ -35,8 +36,14 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
     e.preventDefault();
     setError('');
 
-    if (!form.name || !form.price) {
-      setError('Name and Price are required.');
+    if (!form.name || !form.price || form.stock === '') {
+      setError('Name, Price, and Stock are required.');
+      return;
+    }
+
+    const stockVal = parseInt(form.stock, 10);
+    if (isNaN(stockVal) || stockVal < 0) {
+      setError('Stock must be a non-negative integer.');
       return;
     }
 
@@ -57,7 +64,7 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
         setUploading(false);
       }
 
-      await onSubmit({ ...form, mediaUrl, mediaType });
+      await onSubmit({ ...form, stock: stockVal, mediaUrl, mediaType });
     } catch (err) {
       setUploading(false);
       setError(err.message || 'Something went wrong.');
@@ -85,6 +92,22 @@ export default function AdminProductForm({ initial, onSubmit, onCancel, loading 
           <select className="input-field" name="category" value={form.category} onChange={handleChange}>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="input-group">
+          <label>Quantity in Stock</label>
+          <input 
+            type="number" 
+            className="input-field" 
+            name="stock" 
+            value={form.stock} 
+            onChange={handleChange} 
+            placeholder="e.g. 10" 
+            min="0" 
+            step="1"
+          />
         </div>
       </div>
 

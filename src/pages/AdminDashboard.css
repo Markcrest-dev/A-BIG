@@ -42,6 +42,20 @@
 }
 .table-actions { display: flex; gap: 8px; }
 
+.table-stock {
+  font-size: 0.9rem;
+  color: var(--gray-light);
+  font-weight: 500;
+}
+.table-stock.out-of-stock {
+  color: var(--danger);
+  font-weight: 600;
+  background: rgba(231, 76, 60, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
 .admin-loading { padding: 20px 0; }
 
 @media (max-width: 768px) {

@@ -83,13 +83,21 @@ export default function Cart() {
                         −
                       </button>
                       <span className="qty-val">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)} 
-                        className="qty-btn"
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
+                      {(() => {
+                        const isMaxStock = item.stock !== undefined && item.quantity >= item.stock;
+                        return (
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)} 
+                            className="qty-btn"
+                            aria-label="Increase quantity"
+                            disabled={isMaxStock}
+                            style={isMaxStock ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                            title={isMaxStock ? "Maximum available stock reached" : ""}
+                          >
+                            +
+                          </button>
+                        );
+                      })()}
                     </div>
 
                     <div className="cart-item-subtotal">

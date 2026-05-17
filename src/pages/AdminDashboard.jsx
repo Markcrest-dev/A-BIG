@@ -118,34 +118,43 @@ export default function AdminDashboard() {
                 <th>Name</th>
                 <th>Price</th>
                 <th>Category</th>
+                <th>Stock</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {products.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    <div className="table-thumb">
-                      {p.mediaType === 'video' ? (
-                        <video src={p.mediaUrl} muted />
-                      ) : p.mediaUrl ? (
-                        <img src={p.mediaUrl} alt={p.name} />
-                      ) : (
-                        <div className="thumb-placeholder">📷</div>
-                      )}
-                    </div>
-                  </td>
-                  <td><span className="table-name">{p.name}</span></td>
-                  <td><span className="table-price">₦{p.price}</span></td>
-                  <td><span className="table-category">{p.category}</span></td>
-                  <td>
-                    <div className="table-actions">
-                      <button className="btn btn-outline btn-sm" onClick={() => setEditProduct(p)}>Edit</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(p.id)}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {products.map(p => {
+                const isOutOfStock = p.stock === undefined || p.stock <= 0;
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="table-thumb">
+                        {p.mediaType === 'video' ? (
+                          <video src={p.mediaUrl} muted />
+                        ) : p.mediaUrl ? (
+                          <img src={p.mediaUrl} alt={p.name} />
+                        ) : (
+                          <div className="thumb-placeholder">📷</div>
+                        )}
+                      </div>
+                    </td>
+                    <td><span className="table-name">{p.name}</span></td>
+                    <td><span className="table-price">₦{p.price}</span></td>
+                    <td><span className="table-category">{p.category}</span></td>
+                    <td>
+                      <span className={`table-stock ${isOutOfStock ? 'out-of-stock' : ''}`}>
+                        {isOutOfStock ? 'Out of Stock' : `${p.stock} in stock`}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button className="btn btn-outline btn-sm" onClick={() => setEditProduct(p)}>Edit</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(p.id)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

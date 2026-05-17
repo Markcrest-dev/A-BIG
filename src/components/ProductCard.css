@@ -30,3 +30,19 @@
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .product-btn { width: 100%; }
+
+.product-badge.badge-out-of-stock {
+  left: auto;
+  right: 12px;
+  background: var(--danger);
+  color: var(--white-pure);
+}
+
+.product-card.out-of-stock-card {
+  opacity: 0.95;
+}
+
+.product-card.out-of-stock-card .product-media img,
+.product-card.out-of-stock-card .product-media video {
+  filter: grayscale(0.2) contrast(0.9);
+}
