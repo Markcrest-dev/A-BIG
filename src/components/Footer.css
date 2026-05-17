@@ -1,0 +1,27 @@
+.footer {
+  position: relative; margin-top: 80px; padding: 60px 0 30px;
+  border-top: 1px solid rgba(212,168,67,0.1); overflow: hidden;
+}
+.footer-glow {
+  position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+  width: 400px; height: 200px; background: radial-gradient(ellipse, rgba(212,168,67,0.06), transparent);
+  pointer-events: none;
+}
+.footer-inner { text-align: center; }
+.footer-brand { margin-bottom: 32px; }
+.footer-icon { font-size: 2rem; color: var(--gold); display: block; margin-bottom: 8px; }
+.footer-brand h3 {
+  font-family: var(--font-heading); font-size: 1.5rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.footer-quote { color: var(--gray); font-style: italic; margin-top: 8px; font-size: 0.95rem; }
+
+.footer-info { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin-bottom: 8px; }
+.footer-col h4 { color: var(--gold); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+.footer-col p { color: var(--gray-light); font-size: 0.9rem; margin-bottom: 4px; }
+
+.footer-tagline { color: var(--gold); font-weight: 500; font-size: 0.95rem; letter-spacing: 0.04em; }
+.footer-copy { color: var(--gray); font-size: 0.8rem; margin-top: 12px; }
+
+@media (max-width: 600px) { .footer-info { gap: 24px; } }

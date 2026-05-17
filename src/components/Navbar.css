@@ -1,0 +1,48 @@
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  border-bottom: 1px solid rgba(212,168,67,0.1);
+}
+.navbar-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; max-width: 1200px; margin: 0 auto;
+}
+.navbar-brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { font-size: 1.8rem; color: var(--gold); animation: pulse 3s infinite; }
+.brand-text { display: flex; flex-direction: column; }
+.brand-name {
+  font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.brand-tagline { font-size: 0.7rem; color: var(--gray); letter-spacing: 0.12em; text-transform: uppercase; }
+
+.navbar-links { display: flex; align-items: center; gap: 8px; }
+.nav-link {
+  padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.9rem;
+  font-weight: 500; color: var(--gray-light); transition: var(--transition);
+}
+.nav-link:hover, .nav-link.active { color: var(--gold); background: rgba(212,168,67,0.08); }
+
+.hamburger {
+  display: none; flex-direction: column; gap: 5px; background: none;
+  border: none; cursor: pointer; padding: 4px; z-index: 101;
+}
+.hamburger span {
+  width: 24px; height: 2px; background: var(--gold); transition: var(--transition); border-radius: 2px;
+}
+.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+  .navbar-links {
+    position: fixed; top: 0; right: -100%; width: 260px; height: 100vh;
+    flex-direction: column; justify-content: center; gap: 16px;
+    background: var(--black-card); border-left: 1px solid rgba(212,168,67,0.1);
+    transition: right 0.35s ease; padding: 20px;
+  }
+  .navbar-links.open { right: 0; }
+  .nav-link { font-size: 1.1rem; width: 100%; text-align: center; }
+}
