@@ -30,41 +30,9 @@
 }
 .hero .btn { animation: slideUp 0.8s ease 0.6s both; }
 
-/* ── Products Section ── */
-.products-section { padding: 60px 20px 40px; max-width: 1200px; margin: 0 auto; }
-
-.section-header { text-align: center; margin-bottom: 40px; }
-.section-header h2 { font-size: 2rem; margin-bottom: 12px; }
-.gold-line {
-  width: 60px; height: 3px; margin: 0 auto;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px;
-}
-
-.category-bar {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 36px;
-}
-.category-chip {
-  padding: 8px 20px; border-radius: 30px; border: 1px solid var(--gray-dark);
-  background: transparent; color: var(--gray-light); font-size: 0.85rem;
-  cursor: pointer; transition: var(--transition); font-family: var(--font-body);
-}
-.category-chip:hover { border-color: var(--gold); color: var(--gold); }
-.category-chip.active {
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
-  color: var(--black); border-color: var(--gold); font-weight: 600;
-}
-
-.products-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;
-}
-
 /* ── States ── */
 .error-state, .empty-state {
   text-align: center; padding: 60px 20px; color: var(--gray);
 }
 .error-state span, .empty-icon { font-size: 3rem; display: block; margin-bottom: 16px; }
 .empty-state h3 { color: var(--white); margin-bottom: 8px; }
-
-@media (max-width: 600px) {
-  .products-grid { grid-template-columns: 1fr; }
-}
