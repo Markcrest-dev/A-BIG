@@ -8,7 +8,6 @@ export default function Home() {
       <section className="hero">
         <div className="hero-glow" />
         <div className="hero-content container">
-          <span className="hero-badge">✦ Premium Collection</span>
           <h1 className="hero-title">
             A-BIG Glow<br /><span className="text-gold">& Scents</span>
           </h1>
