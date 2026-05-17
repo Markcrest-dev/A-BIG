@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Footer from './components/Footer';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import AdminDashboard from './pages/AdminDashboard';
@@ -69,7 +68,6 @@ export default function App() {
               />
             </Routes>
           </main>
-          <Footer />
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>

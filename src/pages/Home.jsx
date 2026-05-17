@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './Home.css';
+import Footer from '../components/Footer';
 import heroBg from '../assets/images/perfume_hero_bg_1779016402886.png';
 import himImg from '../assets/images/collection_him_1779016420226.png';
 import herImg from '../assets/images/collection_her_1779016450767.png';
@@ -95,6 +96,7 @@ export default function Home() {
           </Link>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }
