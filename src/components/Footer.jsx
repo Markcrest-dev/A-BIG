@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Footer.css';
+import logoImg from '../assets/images/a_big_logo.png';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -90,46 +91,19 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Newsletter */}
-          <div className="footer-column newsletter-column">
-            <h4>Join The Glow List</h4>
-            <p className="newsletter-text">
-              Subscribe to unlock early access to new collection releases, private sales, and luxury fragrance tips.
+          {/* Column 4: Premium Brand Showcase */}
+          <div className="footer-column brand-showcase-column">
+            <div className="footer-logo-container">
+              <img src={logoImg} alt="A-BIG Glow & Scents" className="footer-logo" />
+            </div>
+            <div className="footer-badge-text">
+              <span className="gold-sparkle">✦</span>
+              <p className="showcase-tagline">ESTABLISHED IN ELEGANCE</p>
+              <span className="gold-sparkle">✦</span>
+            </div>
+            <p className="showcase-desc">
+              Your signature scent is your unspoken introduction. Discover authentic luxury perfumes that leave an unforgettable trail.
             </p>
-
-            <form onSubmit={handleSubscribe} className="newsletter-form">
-              <div className="newsletter-input-wrapper">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={status === 'loading' || status === 'success'}
-                  required
-                  className="newsletter-input"
-                />
-                <button
-                  type="submit"
-                  disabled={status === 'loading' || status === 'success'}
-                  className={`newsletter-btn ${status === 'success' ? 'success' : ''}`}
-                  aria-label="Subscribe"
-                >
-                  {status === 'loading' ? (
-                    <span className="spinner" />
-                  ) : status === 'success' ? (
-                    <span className="check">✓</span>
-                  ) : (
-                    <span className="arrow">→</span>
-                  )}
-                </button>
-              </div>
-            </form>
-
-            {status === 'success' && (
-              <p className="newsletter-success fade-in">
-                ✦ Welcome to the inner circle! Check your inbox soon.
-              </p>
-            )}
           </div>
 
         </div>

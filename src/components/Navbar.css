@@ -7,7 +7,16 @@
   padding: 16px 20px; max-width: 1200px; margin: 0 auto;
 }
 .navbar-brand { display: flex; align-items: center; gap: 12px; }
-.brand-icon { font-size: 1.8rem; color: var(--gold); animation: pulse 3s infinite; }
+.navbar-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 6px rgba(212, 168, 67, 0.25));
+}
+.navbar-brand:hover .navbar-logo {
+  transform: scale(1.08) rotate(5deg);
+}
 .brand-text { display: flex; flex-direction: column; }
 .brand-name {
   font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700;

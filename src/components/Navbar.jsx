@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import './Navbar.css';
+import logoImg from '../assets/images/a_big_logo.png';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,7 +28,7 @@ export default function Navbar() {
     <nav className="navbar glass">
       <div className="navbar-inner container">
         <Link to="/" className="navbar-brand">
-          <span className="brand-icon">✦</span>
+          <img src={logoImg} alt="A-BIG Glow & Scents" className="navbar-logo" />
           <div className="brand-text">
             <span className="brand-name">A-BIG Glow & Scents</span>
             <span className="brand-tagline">Where Elegance Meets Confidence</span>
