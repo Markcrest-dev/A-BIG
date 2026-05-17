@@ -142,3 +142,9 @@
   color: #fff;
   text-decoration: underline;
 }
+
+.password-toggle:hover {
+  opacity: 1 !important;
+  color: var(--gold-light) !important;
+}
+
