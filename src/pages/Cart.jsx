@@ -1,22 +1,166 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import './Cart.css';
 
 export default function Cart() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const { currentUser } = useAuth();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  
+  // Paystack & Checkout State
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successOrderRef, setSuccessOrderRef] = useState('');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  
+  const [deliveryInfo, setDeliveryInfo] = useState({
+    fullName: '',
+    phone: '',
+    address: '',
+    notes: ''
+  });
 
   const numbers = [
     { display: '0704 027 3131', code: '2347040273131' },
     { display: '0816 449 1568', code: '2348164491568' },
   ];
 
+  // Dynamically load Paystack Inline JS script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Fetch delivery profile details if saved in localStorage
+  useEffect(() => {
+    if (currentUser) {
+      const savedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
+      if (savedProfile) {
+        try {
+          const parsed = JSON.parse(savedProfile);
+          setDeliveryInfo(prev => ({
+            ...prev,
+            fullName: parsed.displayName || '',
+            phone: parsed.phoneNumber || '',
+            address: parsed.address || '',
+          }));
+        } catch (e) {
+          console.error('Failed to parse user profile', e);
+        }
+      }
+    }
+  }, [currentUser]);
+
   const handleCheckoutClick = () => {
     if (cartItems.length === 0) return;
     setShowCheckoutModal(true);
+  };
+
+  const handlePaystackClick = () => {
+    if (cartItems.length === 0) return;
+    setShowPaystackModal(true);
+  };
+
+  const handlePaystackPayment = async (e) => {
+    e.preventDefault();
+    setCheckoutError('');
+    
+    if (!window.PaystackPop) {
+      setCheckoutError('Paystack payment gateway is loading. Please wait a few seconds and try again. ⚠️');
+      return;
+    }
+
+    if (!deliveryInfo.fullName || !deliveryInfo.phone || !deliveryInfo.address) {
+      setCheckoutError('Please fill out all required fields.');
+      return;
+    }
+    
+    setPaymentProcessing(true);
+    
+    const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d397ea3c75c8d20df1115c5c00e1cfbb8242cd28';
+    const orderRef = `ABIG-PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    try {
+      const handler = window.PaystackPop.setup({
+        key: paystackKey,
+        email: currentUser?.email || 'guest@abig.com',
+        amount: cartTotal * 100, // Amount in kobo
+        currency: 'NGN',
+        ref: orderRef,
+        onClose: () => {
+          setPaymentProcessing(false);
+        },
+        callback: async (response) => {
+          try {
+            // 1. Create order record in Firestore
+            const orderData = {
+              orderReference: orderRef,
+              paymentReference: response.reference,
+              userId: currentUser?.uid || 'guest',
+              customerEmail: currentUser?.email || 'guest@abig.com',
+              customerName: deliveryInfo.fullName,
+              customerPhone: deliveryInfo.phone,
+              shippingAddress: deliveryInfo.address,
+              customNote: deliveryInfo.notes,
+              items: cartItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                category: item.category || '',
+                mediaUrl: item.mediaUrl || '',
+                mediaType: item.mediaType || ''
+              })),
+              totalAmount: cartTotal,
+              paymentMethod: 'Paystack',
+              status: 'Paid',
+              createdAt: serverTimestamp()
+            };
+            
+            await addDoc(collection(db, 'orders'), orderData);
+            
+            // 2. Decrement stock in Firestore for all purchased items
+            for (const item of cartItems) {
+              try {
+                const productRef = doc(db, 'products', item.id);
+                await updateDoc(productRef, {
+                  stock: increment(-item.quantity)
+                });
+              } catch (stockErr) {
+                console.error(`Failed to update stock for item ${item.id}:`, stockErr);
+              }
+            }
+            
+            // 3. Clear Cart & Close Modal
+            clearCart();
+            setShowPaystackModal(false);
+            setSuccessOrderRef(orderRef);
+            setShowSuccessModal(true);
+          } catch (dbErr) {
+            console.error('Error logging order to Firestore:', dbErr);
+            setCheckoutError('Payment was successful, but we failed to record your order in our database. Reference: ' + response.reference);
+          } finally {
+            setPaymentProcessing(false);
+          }
+        }
+      });
+      
+      handler.openIframe();
+    } catch (err) {
+      console.error('Paystack initialization failed:', err);
+      setCheckoutError('Could not initialize payment window. Please try again.');
+      setPaymentProcessing(false);
+    }
   };
 
   const getWhatsAppLink = (phoneCode) => {
@@ -34,6 +178,25 @@ export default function Cart() {
     return `https://wa.me/${phoneCode}?text=${fullMessage}`;
   };
 
+  const getWhatsAppReceiptLink = () => {
+    const header = `✦ *ONLINE ORDER PAID - A-BIG GLOW & SCENTS* ✦\n`;
+    const refMeta = `*Order Reference:* ${successOrderRef}\n`;
+    const customerMeta = `*Customer:* ${deliveryInfo.fullName} (${currentUser?.email || 'Guest'})\n`;
+    const phoneMeta = `*Phone:* ${deliveryInfo.phone}\n`;
+    const addrMeta = `*Address:* ${deliveryInfo.address}\n\n`;
+    const itemsHeader = `*Items Ordered:*\n`;
+    
+    const itemsList = cartItems.map((item, idx) => (
+      `${idx + 1}. *${item.name}* x ${item.quantity}\n`
+    )).join('\n');
+
+    const totalMeta = `\n*Paid Amount:* ₦${cartTotal.toLocaleString()} via Paystack`;
+    const footer = `\n\nI have successfully paid online. Please process my delivery! Thank you! ✨`;
+    
+    const fullMessage = encodeURIComponent(header + refMeta + customerMeta + phoneMeta + addrMeta + itemsHeader + itemsList + totalMeta + footer);
+    return `https://wa.me/2347040273131?text=${fullMessage}`;
+  };
+
   return (
     <div className="cart-page container fade-in">
       <div className="cart-header-section">
@@ -41,7 +204,7 @@ export default function Cart() {
         <div className="gold-line" />
       </div>
 
-      {cartItems.length === 0 ? (
+      {cartItems.length === 0 && !showSuccessModal ? (
         <div className="empty-cart-state card glass">
           <span className="cart-empty-icon">🛒</span>
           <h3>Your cart is empty</h3>
@@ -49,6 +212,32 @@ export default function Cart() {
           <Link to="/customer/shop" className="btn btn-gold">
             Browse Shop
           </Link>
+        </div>
+      ) : showSuccessModal ? (
+        <div className="empty-cart-state card glass checkout-success-card">
+          <span className="success-icon">✨🏆✨</span>
+          <h3 className="text-gold">Order Placed Successfully!</h3>
+          <p className="success-ref">Order Reference: <strong>{successOrderRef}</strong></p>
+          <p className="success-desc">
+            Thank you for shopping with us! Your payment has been received and logged securely. We are already preparing your luxury items for dispatch.
+          </p>
+          <div className="divider" style={{ margin: '20px auto', width: '80%' }} />
+          <div className="success-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '360px', margin: '0 auto' }}>
+            <a 
+              href={getWhatsAppReceiptLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-whatsapp"
+            >
+              💬 Ping Dispatch on WhatsApp
+            </a>
+            <Link to="/customer/shop" onClick={() => setShowSuccessModal(false)} className="btn btn-gold">
+              Continue Shopping
+            </Link>
+            <Link to="/customer/dashboard" onClick={() => setShowSuccessModal(false)} className="btn btn-outline">
+              Go to Dashboard
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="cart-content-layout">
@@ -147,12 +336,17 @@ export default function Cart() {
                 <span className="text-gold">₦{cartTotal.toLocaleString()}</span>
               </div>
 
-              <button onClick={handleCheckoutClick} className="btn btn-gold btn-lg checkout-btn">
-                Checkout via WhatsApp
-              </button>
+              <div className="checkout-options" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+                <button onClick={handlePaystackClick} className="btn btn-paystack btn-lg checkout-btn">
+                  💳 Pay Online via Paystack
+                </button>
+                <button onClick={handleCheckoutClick} className="btn btn-outline-whatsapp btn-lg checkout-btn">
+                  💬 Checkout via WhatsApp
+                </button>
+              </div>
               
-              <p className="checkout-note text-center">
-                Your order details will be automatically compiled and sent to our WhatsApp sales representatives for instant processing.
+              <p className="checkout-note text-center" style={{ marginTop: '16px' }}>
+                Choose Paystack for secure instant card, transfer, and USSD payments, or WhatsApp to coordinate manually with sales agents.
               </p>
             </div>
           </div>
@@ -180,7 +374,7 @@ export default function Cart() {
                   className="btn btn-gold wa-btn"
                   onClick={() => {
                     setShowCheckoutModal(false);
-                    clearCart(); // Optional: clear cart on click or keep it
+                    clearCart();
                   }}
                 >
                   <span className="wa-whatsapp-icon">
@@ -196,6 +390,101 @@ export default function Cart() {
           </div>
         </div>
       )}
+
+      {/* Paystack Checkout Modal */}
+      {showPaystackModal && (
+        <div className="modal-overlay" onClick={() => setShowPaystackModal(false)}>
+          <div className="modal-content checkout-modal" onClick={e => e.stopPropagation()}>
+            <button className="wa-close" onClick={() => setShowPaystackModal(false)}>✕</button>
+            <div className="checkout-modal-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <span className="checkout-modal-icon" style={{ fontSize: '3rem', display: 'block', marginBottom: '8px' }}>🔒</span>
+              <h3>Secure Online Checkout</h3>
+              <p className="checkout-modal-subtitle" style={{ fontSize: '0.9rem', color: 'var(--gray-light)' }}>
+                Provide your shipping details to complete your payment.
+              </p>
+            </div>
+
+            {checkoutError && (
+              <div className="form-error" style={{ marginBottom: '16px', padding: '10px', background: 'rgba(231,76,60,0.1)', color: 'var(--danger)', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', border: '1px solid rgba(231,76,60,0.2)' }}>
+                {checkoutError}
+              </div>
+            )}
+
+            <form onSubmit={handlePaystackPayment} className="checkout-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="input-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={deliveryInfo.fullName}
+                  onChange={e => setDeliveryInfo({ ...deliveryInfo, fullName: e.target.value })}
+                  placeholder="Enter your first and last name"
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  className="input-field"
+                  value={deliveryInfo.phone}
+                  onChange={e => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
+                  placeholder="e.g., 0803 123 4567"
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Shipping Address</label>
+                <textarea
+                  className="input-field"
+                  value={deliveryInfo.address}
+                  onChange={e => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
+                  placeholder="Enter your physical street, city, and state address"
+                  required
+                  style={{ minHeight: '80px' }}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Delivery/Scent Note (Optional)</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={deliveryInfo.notes}
+                  onChange={e => setDeliveryInfo({ ...deliveryInfo, notes: e.target.value })}
+                  placeholder="Any preferences or delivery instructions?"
+                />
+              </div>
+
+              <div className="checkout-modal-summary card glass" style={{ padding: '16px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--gray-light)' }}>
+                  <span>Total Items</span>
+                  <span>{cartItems.reduce((acc, item) => acc + item.quantity, 0)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '1.1rem' }}>
+                  <span>Grand Total</span>
+                  <span className="text-gold">₦{cartTotal.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={paymentProcessing} 
+                className="btn btn-paystack btn-lg" 
+                style={{ width: '100%', padding: '14px', marginTop: '10px' }}
+              >
+                {paymentProcessing ? 'Processing Payment...' : `Pay ₦${cartTotal.toLocaleString()} Now`}
+              </button>
+              <p className="paystack-disclaimer" style={{ fontSize: '0.75rem', color: 'var(--gray)', textAlign: 'center' }}>
+                🔒 Card, USSD, and Bank Transfer payments are processed securely by Paystack.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
