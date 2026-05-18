@@ -51,15 +51,12 @@ export default function Navbar() {
         </Link>
 
         <div className="navbar-links">
-          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-            Home
-          </Link>
           
           {/* Guest Action */}
           {!currentUser ? (
             <Link to="/auth" className="btn btn-gold btn-sm nav-auth-btn">
               <LogIn size={16} />
-              <span>Login / Sign Up</span>
+              <span>Login</span>
             </Link>
           ) : (
             <div className="nav-authenticated-actions">

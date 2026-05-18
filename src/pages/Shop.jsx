@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ProductCard from '../components/ProductCard';
@@ -18,6 +19,7 @@ export default function Shop() {
   const [activeCategory, setActiveCategory] = useState(ALL);
   const { addToCart } = useCart();
   const [toastMessage, setToastMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -25,6 +27,11 @@ export default function Shop() {
     setTimeout(() => {
       setToastMessage('');
     }, 3000);
+  };
+
+  const handleOrderNow = (product) => {
+    addToCart(product);
+    navigate('/customer/cart');
   };
 
   useEffect(() => {
@@ -106,7 +113,7 @@ export default function Shop() {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                onOrder={setSelectedProduct} 
+                onOrder={handleOrderNow} 
                 onAddToCart={handleAddToCart}
               />
             ))}
