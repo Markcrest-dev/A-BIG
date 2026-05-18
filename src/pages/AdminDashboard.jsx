@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, onSnapshot, query, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import AdminProductForm from '../components/AdminProductForm';
 import { useAuth } from '../context/AuthContext';
+import { 
+  Package, 
+  ClipboardList, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  AlertTriangle, 
+  CheckCircle,
+  Image as ImageIcon,
+  X
+} from 'lucide-react';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -15,12 +26,24 @@ export default function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
 
   // Orders State
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [activeTab, setActiveTab] = useState('products'); // 'products' or 'orders'
+  
+  // Extract and listen to URL tab query parameters
+  const queryParams = new URLSearchParams(location.search);
+  const tabParam = queryParams.get('tab') || 'products';
+  const [activeTab, setActiveTab] = useState(tabParam);
+
+  useEffect(() => {
+    if (tabParam === 'products' || tabParam === 'orders') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [deleteOrderId, setDeleteOrderId] = useState(null);
 
   // Real-time listener for products
@@ -163,7 +186,7 @@ export default function AdminDashboard() {
       <div className="admin-tabs" style={{ display: 'flex', gap: '24px', marginBottom: '32px', borderBottom: '1px solid rgba(212,168,67,0.1)', paddingBottom: '12px' }}>
         <button 
           className={`admin-tab-btn ${activeTab === 'products' ? 'active' : ''}`}
-          onClick={() => setActiveTab('products')}
+          onClick={() => navigate('/admin/dashboard?tab=products')}
           style={{
             background: 'none',
             border: 'none',
@@ -182,7 +205,7 @@ export default function AdminDashboard() {
         </button>
         <button 
           className={`admin-tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
-          onClick={() => setActiveTab('orders')}
+          onClick={() => navigate('/admin/dashboard?tab=orders')}
           style={{
             background: 'none',
             border: 'none',
@@ -205,6 +228,7 @@ export default function AdminDashboard() {
       {(showForm || editProduct) && (
         <div className="modal-overlay" onClick={() => { setShowForm(false); setEditProduct(null); }}>
           <div className="modal-content admin-modal" onClick={e => e.stopPropagation()}>
+            <button className="wa-close" onClick={() => { setShowForm(false); setEditProduct(null); }}>✕</button>
             <h3>{editProduct ? 'Edit Product' : 'Add New Product'}</h3>
             <AdminProductForm
               initial={editProduct}
@@ -220,7 +244,8 @@ export default function AdminDashboard() {
       {deleteId && (
         <div className="modal-overlay" onClick={() => setDeleteId(null)}>
           <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
-            <span className="delete-icon">⚠️</span>
+            <button className="wa-close" onClick={() => setDeleteId(null)}>✕</button>
+            <AlertTriangle size={36} className="text-gold" style={{ display: 'block', margin: '0 auto 12px' }} />
             <h3>Delete Product?</h3>
             <p>This action cannot be undone.</p>
             <div className="form-actions">
@@ -235,7 +260,8 @@ export default function AdminDashboard() {
       {deleteOrderId && (
         <div className="modal-overlay" onClick={() => setDeleteOrderId(null)}>
           <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
-            <span className="delete-icon">⚠️</span>
+            <button className="wa-close" onClick={() => setDeleteOrderId(null)}>✕</button>
+            <AlertTriangle size={36} className="text-gold" style={{ display: 'block', margin: '0 auto 12px' }} />
             <h3>Delete Order Record?</h3>
             <p>This action will permanently delete this order history from the database.</p>
             <div className="form-actions">
@@ -257,8 +283,8 @@ export default function AdminDashboard() {
         loading ? (
           <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
         ) : products.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-icon">📦</span>
+          <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
+            <Package size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
             <h3>No Products</h3>
             <p>Click "Add Product" to get started.</p>
           </div>
@@ -287,7 +313,9 @@ export default function AdminDashboard() {
                           ) : p.mediaUrl ? (
                             <img src={p.mediaUrl} alt={p.name} />
                           ) : (
-                            <div className="thumb-placeholder">📷</div>
+                            <div className="thumb-placeholder">
+                              <ImageIcon size={18} className="text-gray" />
+                            </div>
                           )}
                         </div>
                       </td>
@@ -318,7 +346,7 @@ export default function AdminDashboard() {
           <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
         ) : orders.length === 0 ? (
           <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <span className="empty-icon" style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>📜</span>
+            <ClipboardList size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
             <h3>No Orders Recorded</h3>
             <p style={{ color: 'var(--gray-light)' }}>Orders paid via Paystack will automatically appear here in real-time.</p>
           </div>
@@ -348,10 +376,16 @@ export default function AdminDashboard() {
                         <div style={{ fontSize: '0.7rem', color: 'var(--gray)', marginTop: '4px' }}>Paystack Ref: <br/><span style={{ fontFamily: 'monospace' }}>{o.paymentReference?.substring(0, 14)}...</span></div>
                       </td>
                       <td style={{ verticalAlign: 'top', maxWidth: '250px' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--white)' }}>{o.customerName}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--gray-light)', marginTop: '2px' }}>📧 {o.customerEmail}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--gray-light)', marginTop: '2px' }}>📞 {o.customerPhone}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--gray)', marginTop: '6px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>📍 {o.shippingAddress}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--white)', marginBottom: '6px' }}>{o.customerName}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--gray-light)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Mail size={12} className="text-gold" /> {o.customerEmail}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--gray-light)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Phone size={12} className="text-gold" /> {o.customerPhone}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--gray)', marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '6px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                          <MapPin size={12} className="text-gold" style={{ flexShrink: 0, marginTop: '2px' }} /> {o.shippingAddress}
+                        </div>
                         {o.customNote && (
                           <div style={{ fontSize: '0.8rem', color: 'var(--gold)', fontStyle: 'italic', marginTop: '6px', background: 'rgba(212,168,67,0.05)', padding: '6px 10px', borderRadius: '4px', borderLeft: '2.5px solid var(--gold)' }}>
                             "{o.customNote}"
@@ -372,7 +406,7 @@ export default function AdminDashboard() {
                       <td style={{ verticalAlign: 'top' }}>
                         <span className="table-price" style={{ fontSize: '1.1rem' }}>₦{parseFloat(o.totalAmount || 0).toLocaleString()}</span>
                         <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '0.8rem' }}>✓</span> Paid Online
+                          <CheckCircle size={12} /> Paid Online
                         </div>
                       </td>
                       <td style={{ verticalAlign: 'top' }}>

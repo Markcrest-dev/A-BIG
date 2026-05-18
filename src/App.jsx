@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import CustomerLayout from './components/CustomerLayout';
+import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import AdminDashboard from './pages/AdminDashboard';
@@ -25,47 +27,30 @@ export default function App() {
 
               {/* Customer Routes (Protected) */}
               <Route
-                path="/customer/dashboard"
+                path="/customer"
                 element={
                   <ProtectedRoute adminOnly={false}>
-                    <CustomerDashboard />
+                    <CustomerLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/customer/shop"
-                element={
-                  <ProtectedRoute adminOnly={false}>
-                    <Shop />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/customer/cart"
-                element={
-                  <ProtectedRoute adminOnly={false}>
-                    <Cart />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/customer/settings"
-                element={
-                  <ProtectedRoute adminOnly={false}>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="dashboard" element={<CustomerDashboard />} />
+                <Route path="shop" element={<Shop />} />
+                <Route path="cart" element={<Cart />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
               {/* Admin Routes (Protected) */}
               <Route
-                path="/admin/dashboard"
+                path="/admin"
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminDashboard />
+                    <AdminLayout />
                   </ProtectedRoute>
                 }
-              />
+              >
+                <Route path="dashboard" element={<AdminDashboard />} />
+              </Route>
             </Routes>
           </main>
         </BrowserRouter>

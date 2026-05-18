@@ -1,16 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { LogIn, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import './Navbar.css';
 import logoImg from '../assets/images/a_big_logo.png';
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
-  const { cartCount } = useCart();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Hide Navbar completely on customer and admin dashboard/panel pages
+  const isDashboard = location.pathname.startsWith('/customer') || location.pathname.startsWith('/admin');
+
+  // Handle scroll effect for elegant blur transition
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (isDashboard) {
+    return null; // Sidebars will handle dashboard navigation
+  }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
   const isAdmin = currentUser && currentUser.email.toLowerCase() === adminEmail.toLowerCase();
@@ -25,66 +44,47 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="navbar glass">
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-inner container">
         <Link to="/" className="navbar-brand">
           <img src={logoImg} alt="A-BIG Glow & Scents" className="navbar-logo" />
         </Link>
 
-        <button
-          className={`hamburger ${menuOpen ? 'active' : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span /><span /><span />
-        </button>
-
-        <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+        <div className="navbar-links">
+          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
             Home
           </Link>
           
-          {/* Guest Links */}
-          {!currentUser && (
-            <Link to="/auth" className={`nav-link ${location.pathname === '/auth' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Login / Sign Up
+          {/* Guest Action */}
+          {!currentUser ? (
+            <Link to="/auth" className="btn btn-gold btn-sm nav-auth-btn">
+              <LogIn size={16} />
+              <span>Login / Sign Up</span>
             </Link>
-          )}
-
-          {/* Customer Links */}
-          {currentUser && !isAdmin && (
-            <>
-              <Link to="/customer/dashboard" className={`nav-link ${location.pathname === '/customer/dashboard' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                Dashboard
-              </Link>
-              <Link to="/customer/shop" className={`nav-link ${location.pathname === '/customer/shop' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                Shop
-              </Link>
-              <Link to="/customer/cart" className={`nav-link ${location.pathname === '/customer/cart' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                Cart {cartCount > 0 && <span className="cart-badge-nav">{cartCount}</span>}
-              </Link>
-              <Link to="/customer/settings" className={`nav-link ${location.pathname === '/customer/settings' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                Settings
-              </Link>
-            </>
-          )}
-
-          {/* Admin Links */}
-          {currentUser && isAdmin && (
-            <Link to="/admin/dashboard" className={`nav-link ${location.pathname === '/admin/dashboard' ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              Admin Dashboard
-            </Link>
-          )}
-
-          {/* Logout Button */}
-          {currentUser && (
-            <button 
-              onClick={() => { handleLogout(); setMenuOpen(false); }} 
-              className="nav-link btn-logout" 
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}
-            >
-              Logout
-            </button>
+          ) : (
+            <div className="nav-authenticated-actions">
+              {isAdmin ? (
+                <Link to="/admin/dashboard" className="btn btn-gold btn-sm nav-dashboard-btn">
+                  <ShieldCheck size={16} />
+                  <span>Admin Panel</span>
+                </Link>
+              ) : (
+                <Link to="/customer/dashboard" className="btn btn-gold btn-sm nav-dashboard-btn">
+                  <LayoutDashboard size={16} />
+                  <span>Dashboard</span>
+                </Link>
+              )}
+              
+              <button 
+                onClick={handleLogout} 
+                className="nav-link btn-logout" 
+                title="Logout"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <LogOut size={16} />
+                <span className="logout-text">Logout</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

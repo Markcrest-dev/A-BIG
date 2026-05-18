@@ -147,3 +147,33 @@ select.input-field { cursor: pointer; }
     max-height: 92vh; /* Give slightly more room on small screen heights */
   }
 }
+
+/* ── Global Modals Close & Modifiers ── */
+.wa-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.wa-close:hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-content.modal-lg {
+  max-width: 650px;
+}
+

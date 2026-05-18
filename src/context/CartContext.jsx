@@ -11,22 +11,64 @@ export function CartProvider({ children }) {
   const { currentUser } = useAuth();
   const [cartItems, setCartItems] = useState([]);
 
-  // Load cart from localStorage when user changes
+  // Load cart from localStorage and merge guest cart when user logs in
   useEffect(() => {
     if (currentUser) {
-      const savedCart = localStorage.getItem(`cart_${currentUser.uid}`);
-      if (savedCart) {
+      // 1. Load user's saved cart
+      let userCart = [];
+      const savedUserCart = localStorage.getItem(`cart_${currentUser.uid}`);
+      if (savedUserCart) {
         try {
-          setCartItems(JSON.parse(savedCart));
+          userCart = JSON.parse(savedUserCart);
         } catch (e) {
-          console.error('Failed to parse cart items', e);
+          console.error('Failed to parse user cart items', e);
+        }
+      }
+
+      // 2. Load guest's saved cart and merge
+      const savedGuestCart = localStorage.getItem('cart_guest');
+      if (savedGuestCart) {
+        try {
+          const guestCart = JSON.parse(savedGuestCart);
+          if (guestCart && guestCart.length > 0) {
+            // Merge guest cart items into user cart
+            const mergedCart = [...userCart];
+            guestCart.forEach(guestItem => {
+              const existingIdx = mergedCart.findIndex(item => item.id === guestItem.id);
+              if (existingIdx > -1) {
+                // If item exists in user cart, add quantities up to max stock
+                const maxStock = guestItem.stock !== undefined ? guestItem.stock : 999;
+                mergedCart[existingIdx].quantity = Math.min(
+                  mergedCart[existingIdx].quantity + guestItem.quantity,
+                  maxStock
+                );
+              } else {
+                mergedCart.push(guestItem);
+              }
+            });
+            userCart = mergedCart;
+            // Clear guest cart from localStorage
+            localStorage.removeItem('cart_guest');
+          }
+        } catch (e) {
+          console.error('Failed to parse guest cart items on merge', e);
+        }
+      }
+
+      setCartItems(userCart);
+    } else {
+      // Load guest cart
+      const savedGuestCart = localStorage.getItem('cart_guest');
+      if (savedGuestCart) {
+        try {
+          setCartItems(JSON.parse(savedGuestCart));
+        } catch (e) {
+          console.error('Failed to parse guest cart items', e);
           setCartItems([]);
         }
       } else {
         setCartItems([]);
       }
-    } else {
-      setCartItems([]);
     }
   }, [currentUser]);
 
@@ -34,6 +76,8 @@ export function CartProvider({ children }) {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(`cart_${currentUser.uid}`, JSON.stringify(cartItems));
+    } else {
+      localStorage.setItem('cart_guest', JSON.stringify(cartItems));
     }
   }, [cartItems, currentUser]);
 

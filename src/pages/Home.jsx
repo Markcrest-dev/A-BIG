@@ -5,6 +5,7 @@ import heroBg from '../assets/images/perfume_hero_bg_1779016402886.png';
 import himImg from '../assets/images/collection_him_1779016420226.png';
 import herImg from '../assets/images/collection_her_1779016450767.png';
 import { useAuth } from '../context/AuthContext';
+import { Sparkles, Gem, Leaf } from 'lucide-react';
 
 export default function Home() {
   const { currentUser } = useAuth();
@@ -52,17 +53,17 @@ export default function Home() {
         </div>
         <div className="features-grid">
           <div className="feature-card fade-in delay-1">
-            <div className="feature-icon">✨</div>
+            <div className="feature-icon"><Sparkles size={32} className="text-gold" /></div>
             <h3>Premium Quality</h3>
             <p>Sourced from the finest notes globally to ensure a long-lasting and rich aroma.</p>
           </div>
           <div className="feature-card fade-in delay-2">
-            <div className="feature-icon">💎</div>
+            <div className="feature-icon"><Gem size={32} className="text-gold" /></div>
             <h3>Luxurious Design</h3>
             <p>Our bottles are masterpieces of craftsmanship, reflecting the elegance within.</p>
           </div>
           <div className="feature-card fade-in delay-3">
-            <div className="feature-icon">🌿</div>
+            <div className="feature-icon"><Leaf size={32} className="text-gold" /></div>
             <h3>Exquisite Notes</h3>
             <p>Harmonious blends that evolve beautifully, creating an unforgettable aura.</p>
           </div>

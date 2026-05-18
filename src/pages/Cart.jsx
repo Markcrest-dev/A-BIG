@@ -4,6 +4,16 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { 
+  ShoppingCart, 
+  Lock, 
+  Trophy, 
+  Trash2, 
+  Image as ImageIcon, 
+  MessageSquare, 
+  AlertCircle,
+  ShieldCheck
+} from 'lucide-react';
 import './Cart.css';
 
 export default function Cart() {
@@ -87,7 +97,7 @@ export default function Cart() {
     
     setPaymentProcessing(true);
     
-    const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d397ea3c75c8d20df1115c5c00e1cfbb8242cd28';
+    const paystackKey = (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d397ea3c75c8d20df1115c5c00e1cfbb8242cd28').trim();
     const orderRef = `ABIG-PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
     try {
@@ -97,68 +107,73 @@ export default function Cart() {
         amount: cartTotal * 100, // Amount in kobo
         currency: 'NGN',
         ref: orderRef,
-        onClose: () => {
+        onClose: function() {
           setPaymentProcessing(false);
         },
-        callback: async (response) => {
-          try {
-            // 1. Create order record in Firestore
-            const orderData = {
-              orderReference: orderRef,
-              paymentReference: response.reference,
-              userId: currentUser?.uid || 'guest',
-              customerEmail: currentUser?.email || 'guest@abig.com',
-              customerName: deliveryInfo.fullName,
-              customerPhone: deliveryInfo.phone,
-              shippingAddress: deliveryInfo.address,
-              customNote: deliveryInfo.notes,
-              items: cartItems.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                category: item.category || '',
-                mediaUrl: item.mediaUrl || '',
-                mediaType: item.mediaType || ''
-              })),
-              totalAmount: cartTotal,
-              paymentMethod: 'Paystack',
-              status: 'Paid',
-              createdAt: serverTimestamp()
-            };
-            
-            await addDoc(collection(db, 'orders'), orderData);
-            
-            // 2. Decrement stock in Firestore for all purchased items
-            for (const item of cartItems) {
-              try {
-                const productRef = doc(db, 'products', item.id);
-                await updateDoc(productRef, {
-                  stock: increment(-item.quantity)
-                });
-              } catch (stockErr) {
-                console.error(`Failed to update stock for item ${item.id}:`, stockErr);
+        callback: function(response) {
+          // Execute async database and stock logic within a separate, standard function
+          const recordSuccess = async () => {
+            try {
+              // 1. Create order record in Firestore
+              const orderData = {
+                orderReference: orderRef,
+                paymentReference: response.reference,
+                userId: currentUser?.uid || 'guest',
+                customerEmail: currentUser?.email || 'guest@abig.com',
+                customerName: deliveryInfo.fullName,
+                customerPhone: deliveryInfo.phone,
+                shippingAddress: deliveryInfo.address,
+                customNote: deliveryInfo.notes,
+                items: cartItems.map(item => ({
+                  id: item.id,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  category: item.category || '',
+                  mediaUrl: item.mediaUrl || '',
+                  mediaType: item.mediaType || ''
+                })),
+                totalAmount: cartTotal,
+                paymentMethod: 'Paystack',
+                status: 'Paid',
+                createdAt: serverTimestamp()
+              };
+              
+              await addDoc(collection(db, 'orders'), orderData);
+              
+              // 2. Decrement stock in Firestore for all purchased items
+              for (const item of cartItems) {
+                try {
+                  const productRef = doc(db, 'products', item.id);
+                  await updateDoc(productRef, {
+                    stock: increment(-item.quantity)
+                  });
+                } catch (stockErr) {
+                  console.error(`Failed to update stock for item ${item.id}:`, stockErr);
+                }
               }
+              
+              // 3. Clear Cart & Close Modal
+              clearCart();
+              setShowPaystackModal(false);
+              setSuccessOrderRef(orderRef);
+              setShowSuccessModal(true);
+            } catch (dbErr) {
+              console.error('Error logging order to Firestore:', dbErr);
+              setCheckoutError('Payment was successful, but we failed to record your order in our database. Reference: ' + response.reference);
+            } finally {
+              setPaymentProcessing(false);
             }
-            
-            // 3. Clear Cart & Close Modal
-            clearCart();
-            setShowPaystackModal(false);
-            setSuccessOrderRef(orderRef);
-            setShowSuccessModal(true);
-          } catch (dbErr) {
-            console.error('Error logging order to Firestore:', dbErr);
-            setCheckoutError('Payment was successful, but we failed to record your order in our database. Reference: ' + response.reference);
-          } finally {
-            setPaymentProcessing(false);
-          }
+          };
+          
+          recordSuccess();
         }
       });
       
       handler.openIframe();
     } catch (err) {
       console.error('Paystack initialization failed:', err);
-      setCheckoutError('Could not initialize payment window. Please try again.');
+      setCheckoutError('Could not initialize payment window: ' + (err.message || 'Please check your internet connection or key and try again.'));
       setPaymentProcessing(false);
     }
   };
@@ -205,8 +220,8 @@ export default function Cart() {
       </div>
 
       {cartItems.length === 0 && !showSuccessModal ? (
-        <div className="empty-cart-state card glass">
-          <span className="cart-empty-icon">🛒</span>
+        <div className="empty-cart-state card glass text-center">
+          <ShoppingCart size={48} className="text-gold" style={{ animation: 'float 4s ease-in-out infinite', marginBottom: '20px' }} />
           <h3>Your cart is empty</h3>
           <p>Treat yourself to our exquisite selections of luxury scents and glow essentials.</p>
           <Link to="/customer/shop" className="btn btn-gold">
@@ -214,8 +229,8 @@ export default function Cart() {
           </Link>
         </div>
       ) : showSuccessModal ? (
-        <div className="empty-cart-state card glass checkout-success-card">
-          <span className="success-icon">✨🏆✨</span>
+        <div className="empty-cart-state card glass checkout-success-card text-center">
+          <Trophy size={48} className="text-gold" style={{ marginBottom: '20px' }} />
           <h3 className="text-gold">Order Placed Successfully!</h3>
           <p className="success-ref">Order Reference: <strong>{successOrderRef}</strong></p>
           <p className="success-desc">
@@ -229,7 +244,7 @@ export default function Cart() {
               rel="noopener noreferrer"
               className="btn btn-whatsapp"
             >
-              💬 Ping Dispatch on WhatsApp
+              <MessageSquare size={16} /> Ping Dispatch on WhatsApp
             </a>
             <Link to="/customer/shop" onClick={() => setShowSuccessModal(false)} className="btn btn-gold">
               Continue Shopping
@@ -251,7 +266,9 @@ export default function Cart() {
                   ) : item.mediaUrl ? (
                     <img src={item.mediaUrl} alt={item.name} />
                   ) : (
-                    <div className="cart-item-thumb-placeholder">📷</div>
+                    <div className="cart-item-thumb-placeholder">
+                      <ImageIcon size={24} className="text-gray" />
+                    </div>
                   )}
                 </div>
                 
@@ -298,7 +315,7 @@ export default function Cart() {
                       className="cart-delete-btn"
                       title="Remove Item"
                     >
-                      🗑️
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
@@ -337,11 +354,11 @@ export default function Cart() {
               </div>
 
               <div className="checkout-options" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
-                <button onClick={handlePaystackClick} className="btn btn-paystack btn-lg checkout-btn">
-                  💳 Pay Online via Paystack
+                <button onClick={handlePaystackClick} className="btn btn-paystack btn-lg checkout-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <Lock size={16} /> Pay Online via Paystack
                 </button>
-                <button onClick={handleCheckoutClick} className="btn btn-outline-whatsapp btn-lg checkout-btn">
-                  💬 Checkout via WhatsApp
+                <button onClick={handleCheckoutClick} className="btn btn-outline-whatsapp btn-lg checkout-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <MessageSquare size={16} /> Checkout via WhatsApp
                 </button>
               </div>
               
@@ -358,8 +375,8 @@ export default function Cart() {
         <div className="modal-overlay" onClick={() => setShowCheckoutModal(false)}>
           <div className="modal-content wa-modal" onClick={e => e.stopPropagation()}>
             <button className="wa-close" onClick={() => setShowCheckoutModal(false)}>✕</button>
-            <div className="wa-header">
-              <span className="wa-icon">💬</span>
+            <div className="wa-header" style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <MessageSquare size={36} className="text-gold" style={{ marginBottom: '12px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
               <h3>Confirm Cart Order</h3>
               <p className="wa-subtitle">Choose a representative to place your cart order ({cartItems.length} items):</p>
             </div>
@@ -374,7 +391,6 @@ export default function Cart() {
                   className="btn btn-gold wa-btn"
                   onClick={() => {
                     setShowCheckoutModal(false);
-                    clearCart();
                   }}
                 >
                   <span className="wa-whatsapp-icon">
@@ -397,7 +413,7 @@ export default function Cart() {
           <div className="modal-content checkout-modal" onClick={e => e.stopPropagation()}>
             <button className="wa-close" onClick={() => setShowPaystackModal(false)}>✕</button>
             <div className="checkout-modal-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <span className="checkout-modal-icon" style={{ fontSize: '3rem', display: 'block', marginBottom: '8px' }}>🔒</span>
+              <Lock size={36} className="text-gold" style={{ marginBottom: '12px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
               <h3>Secure Online Checkout</h3>
               <p className="checkout-modal-subtitle" style={{ fontSize: '0.9rem', color: 'var(--gray-light)' }}>
                 Provide your shipping details to complete your payment.
@@ -478,7 +494,7 @@ export default function Cart() {
                 {paymentProcessing ? 'Processing Payment...' : `Pay ₦${cartTotal.toLocaleString()} Now`}
               </button>
               <p className="paystack-disclaimer" style={{ fontSize: '0.75rem', color: 'var(--gray)', textAlign: 'center' }}>
-                🔒 Card, USSD, and Bank Transfer payments are processed securely by Paystack.
+                <ShieldCheck size={16} /> Card, USSD, and Bank Transfer payments are processed securely by Paystack.
               </p>
             </form>
           </div>

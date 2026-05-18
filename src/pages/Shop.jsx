@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard';
 import WhatsAppModal from '../components/WhatsAppModal';
 import Loader from '../components/Loader';
 import { useCart } from '../context/CartContext';
+import { AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
 import './Shop.css';
 
 const ALL = 'All';
@@ -86,14 +87,14 @@ export default function Shop() {
 
         {error && (
           <div className="error-state">
-            <span>⚠️</span>
+            <AlertCircle size={32} className="text-gold" style={{ marginBottom: '12px' }} />
             <p>{error}</p>
           </div>
         )}
 
         {!loading && !error && filtered.length === 0 && (
           <div className="empty-state">
-            <span className="empty-icon">✦</span>
+            <Sparkles size={36} className="text-gold" style={{ marginBottom: '12px' }} />
             <h3>No Products Yet</h3>
             <p>Our luxurious collection is coming soon. Stay tuned!</p>
           </div>
@@ -115,8 +116,8 @@ export default function Shop() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="cart-toast glass fade-in">
-          <span className="toast-emoji">✨</span>
+        <div className="cart-toast glass fade-in" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle size={18} className="text-gold" />
           <p>{toastMessage}</p>
         </div>
       )}
