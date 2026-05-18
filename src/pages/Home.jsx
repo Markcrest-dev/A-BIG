@@ -1,11 +1,23 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import './Home.css';
 import Footer from '../components/Footer';
 import heroBg from '../assets/images/perfume_hero_bg_1779016402886.png';
 import himImg from '../assets/images/collection_him_1779016420226.png';
 import herImg from '../assets/images/collection_her_1779016450767.png';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
+  const { currentUser } = useAuth();
+
+  if (currentUser) {
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
+    if (currentUser.email.toLowerCase() === adminEmail.toLowerCase()) {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else {
+      return <Navigate to="/customer/dashboard" replace />;
+    }
+  }
+
   return (
     <div className="home-page">
       {/* Hero Section */}

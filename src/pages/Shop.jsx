@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ProductCard from '../components/ProductCard';
 import WhatsAppModal from '../components/WhatsAppModal';
@@ -27,16 +27,28 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q,
       (snapshot) => {
         const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // In-memory sorting (newest first based on createdAt)
+        items.sort((a, b) => {
+          const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return timeB - timeA;
+        });
         setProducts(items);
         setLoading(false);
       },
       (err) => {
         console.error('Firestore error:', err);
-        setError('Failed to load products. Please try again later.');
+        let userFriendlyError = 'Failed to load products. Please try again later.';
+        if (err.message?.includes('NOT_FOUND') || err.code === 'not-found') {
+          userFriendlyError = 'Firestore database not found. ⚠️ Please go to the Firebase Console, select your project ("abig-glow-scents"), navigate to "Firestore Database" in the sidebar, and click "Create Database".';
+        } else if (err.message?.includes('permission') || err.code === 'permission-denied') {
+          userFriendlyError = 'Permission denied. ⚠️ Please check your Firestore Security Rules in the Firebase Console and ensure read access is allowed.';
+        }
+        setError(userFriendlyError);
         setLoading(false);
       }
     );

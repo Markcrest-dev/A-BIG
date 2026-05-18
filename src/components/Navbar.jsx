@@ -29,10 +29,6 @@ export default function Navbar() {
       <div className="navbar-inner container">
         <Link to="/" className="navbar-brand">
           <img src={logoImg} alt="A-BIG Glow & Scents" className="navbar-logo" />
-          <div className="brand-text">
-            <span className="brand-name">A-BIG Glow & Scents</span>
-            <span className="brand-tagline">Where Elegance Meets Confidence</span>
-          </div>
         </Link>
 
         <button

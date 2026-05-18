@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import AdminProductForm from '../components/AdminProductForm';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import './AdminDashboard.css';
 export default function AdminDashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -18,9 +19,27 @@ export default function AdminDashboard() {
 
   // Real-time listener
   useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'products'));
     const unsub = onSnapshot(q, (snap) => {
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // In-memory sorting by createdAt desc
+      items.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return timeB - timeA;
+      });
+      setProducts(items);
+      setLoading(false);
+      setError('');
+    }, (err) => {
+      console.error('Firestore real-time listener error:', err);
+      let userFriendlyError = 'Failed to load products. Please try again later.';
+      if (err.message?.includes('NOT_FOUND') || err.code === 'not-found') {
+        userFriendlyError = 'Firestore database not found. ⚠️ Please go to the Firebase Console, select your project ("abig-glow-scents"), navigate to "Firestore Database" in the sidebar, and click "Create Database".';
+      } else if (err.message?.includes('permission') || err.code === 'permission-denied') {
+        userFriendlyError = 'Permission denied. ⚠️ Please check your Firestore Security Rules in the Firebase Console (Firestore Database > Rules) and ensure read access is allowed.';
+      }
+      setError(userFriendlyError);
       setLoading(false);
     });
     return () => unsub();
@@ -118,6 +137,12 @@ export default function AdminDashboard() {
       )}
 
       {/* Product Table */}
+      {error && (
+        <div className="form-error" style={{ marginBottom: '24px', padding: '16px', background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 'var(--radius-sm)', color: 'var(--danger)', fontWeight: 500 }}>
+          {error}
+        </div>
+      )}
+
       {loading ? (
         <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
       ) : products.length === 0 ? (
