@@ -13,8 +13,23 @@
   text-align: center;
 }
 .file-label:hover { border-color: var(--gold); color: var(--gold); }
-.media-preview { margin-top: 12px; border-radius: var(--radius-sm); overflow: hidden; max-height: 200px; }
-.media-preview img, .media-preview video { width: 100%; max-height: 200px; object-fit: cover; }
+.media-preview {
+  margin-top: 12px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 200px;
+  background: var(--black-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.media-preview img, .media-preview video {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  padding: 8px;
+  box-sizing: border-box;
+}
 .form-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 8px; }
 
 @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
