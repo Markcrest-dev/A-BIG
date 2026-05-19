@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import RequestModal from '../components/RequestModal';
 import { 
@@ -13,7 +13,9 @@ import {
   Image as ImageIcon, 
   MessageSquare, 
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  MapPin,
+  Truck
 } from 'lucide-react';
 import './Cart.css';
 
@@ -29,6 +31,10 @@ export default function Cart() {
   const [successOrderRef, setSuccessOrderRef] = useState('');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  
+  // Shipping Locations state
+  const [shippingLocations, setShippingLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   
   const [deliveryInfo, setDeliveryInfo] = useState({
     fullName: '',
@@ -73,13 +79,34 @@ export default function Cart() {
     }
   }, [currentUser]);
 
+  // Fetch shipping fees from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'shipping_fees'));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      items.sort((a, b) => a.location.localeCompare(b.location));
+      setShippingLocations(items);
+    }, (err) => {
+      console.error('Failed to fetch shipping fees:', err);
+    });
+    return () => unsub();
+  }, []);
+
   const handleCheckoutClick = () => {
     if (cartItems.length === 0) return;
+    if (!selectedLocation) {
+      alert("Please select a delivery location first to calculate the shipping fee! 🚚");
+      return;
+    }
     setShowCheckoutModal(true);
   };
 
   const handlePaystackClick = () => {
     if (cartItems.length === 0) return;
+    if (!selectedLocation) {
+      alert("Please select a delivery location first to calculate the shipping fee! 🚚");
+      return;
+    }
     setShowPaystackModal(true);
   };
 
@@ -89,6 +116,11 @@ export default function Cart() {
     
     if (!window.PaystackPop) {
       setCheckoutError('Paystack payment gateway is loading. Please wait a few seconds and try again. ⚠️');
+      return;
+    }
+
+    if (!selectedLocation) {
+      setCheckoutError('Please select a delivery location first to calculate shipping.');
       return;
     }
 
@@ -102,11 +134,15 @@ export default function Cart() {
     const paystackKey = (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_d397ea3c75c8d20df1115c5c00e1cfbb8242cd28').trim();
     const orderRef = `ABIG-PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
+    const taxAmount = cartTotal * 0.03;
+    const shippingFee = selectedLocation ? selectedLocation.fee : 0;
+    const grandTotal = cartTotal + taxAmount + shippingFee;
+
     try {
       const handler = window.PaystackPop.setup({
         key: paystackKey,
         email: currentUser?.email || 'guest@abig.com',
-        amount: cartTotal * 100, // Amount in kobo
+        amount: grandTotal * 100, // Amount in kobo (with tax and shipping)
         currency: 'NGN',
         ref: orderRef,
         onClose: function() {
@@ -124,7 +160,12 @@ export default function Cart() {
                 customerEmail: currentUser?.email || 'guest@abig.com',
                 customerName: deliveryInfo.fullName,
                 customerPhone: deliveryInfo.phone,
-                shippingAddress: deliveryInfo.address,
+                shippingAddress: `${selectedLocation.location}: ${deliveryInfo.address}`,
+                shippingLocation: selectedLocation.location,
+                shippingFee: shippingFee,
+                taxAmount: taxAmount,
+                subtotalAmount: cartTotal,
+                totalAmount: grandTotal,
                 customNote: deliveryInfo.notes,
                 items: cartItems.map(item => ({
                   id: item.id,
@@ -139,7 +180,6 @@ export default function Cart() {
                     name: item.selectedVariation.name
                   } : null
                 })),
-                totalAmount: cartTotal,
                 paymentMethod: 'Paystack',
                 status: 'Paid',
                 createdAt: serverTimestamp()
@@ -185,14 +225,14 @@ export default function Cart() {
                 const adminNotif = {
                   userId: 'admin',
                   title: 'New Payment Received',
-                  message: `Customer ${deliveryInfo.fullName} paid ₦${cartTotal.toLocaleString()} for order ${orderRef}.`,
+                  message: `Customer ${deliveryInfo.fullName} paid ₦${grandTotal.toLocaleString()} for order ${orderRef}.`,
                   type: 'order_payment',
                   read: false,
                   createdAt: serverTimestamp(),
                   metadata: {
                     orderRef: orderRef,
                     customerName: deliveryInfo.fullName,
-                    totalAmount: cartTotal
+                    totalAmount: grandTotal
                   }
                 };
                 await addDoc(collection(db, 'notifications'), adminNotif);
@@ -212,7 +252,7 @@ export default function Cart() {
                     createdAt: serverTimestamp(),
                     metadata: {
                       orderRef: orderRef,
-                      totalAmount: cartTotal
+                      totalAmount: grandTotal
                     }
                   };
                   await addDoc(collection(db, 'notifications'), customerNotif);
@@ -247,6 +287,10 @@ export default function Cart() {
   };
 
   const getWhatsAppLink = (phoneCode) => {
+    const taxAmount = cartTotal * 0.03;
+    const shippingFee = selectedLocation ? selectedLocation.fee : 0;
+    const grandTotal = cartTotal + taxAmount + shippingFee;
+
     const header = `✦ *NEW ORDER - A-BIG GLOW & SCENTS* ✦\n`;
     const userMeta = `*Customer:* ${currentUser?.email || 'Guest'}\n\n`;
     const itemsHeader = `*Items Ordered:*\n`;
@@ -256,18 +300,24 @@ export default function Cart() {
       return `${idx + 1}. *${item.name}${varSuffix}* x ${item.quantity}\n   _Price: ₦${item.price} each_\n   _Subtotal: ₦${(item.price * item.quantity).toLocaleString()}_\n`;
     }).join('\n');
 
-    const footer = `\n-----------------------------------------\n*Grand Total: ₦${cartTotal.toLocaleString()}*\n-----------------------------------------\n\nPlease confirm my order. Thank you! ✨`;
+    const pricingBreakdown = `\n*Pricing Breakdown:*\n- Subtotal: ₦${cartTotal.toLocaleString()}\n- Delivery Location: ${selectedLocation ? selectedLocation.location : 'N/A'} (₦${shippingFee.toLocaleString()})\n- Tax (3%): ₦${taxAmount.toLocaleString()}\n`;
 
-    const fullMessage = encodeURIComponent(header + userMeta + itemsHeader + itemsList + footer);
+    const footer = `\n-----------------------------------------\n*Grand Total: ₦${grandTotal.toLocaleString()}*\n-----------------------------------------\n\nPlease confirm my order. Thank you! ✨`;
+
+    const fullMessage = encodeURIComponent(header + userMeta + itemsHeader + itemsList + pricingBreakdown + footer);
     return `https://wa.me/${phoneCode}?text=${fullMessage}`;
   };
 
   const getWhatsAppReceiptLink = () => {
+    const taxAmount = cartTotal * 0.03;
+    const shippingFee = selectedLocation ? selectedLocation.fee : 0;
+    const grandTotal = cartTotal + taxAmount + shippingFee;
+
     const header = `✦ *ONLINE ORDER PAID - A-BIG GLOW & SCENTS* ✦\n`;
     const refMeta = `*Order Reference:* ${successOrderRef}\n`;
     const customerMeta = `*Customer:* ${deliveryInfo.fullName} (${currentUser?.email || 'Guest'})\n`;
     const phoneMeta = `*Phone:* ${deliveryInfo.phone}\n`;
-    const addrMeta = `*Address:* ${deliveryInfo.address}\n\n`;
+    const addrMeta = `*Address:* ${deliveryInfo.address} (${selectedLocation ? selectedLocation.location : 'N/A'})\n\n`;
     const itemsHeader = `*Items Ordered:*\n`;
     
     const itemsList = cartItems.map((item, idx) => {
@@ -275,10 +325,12 @@ export default function Cart() {
       return `${idx + 1}. *${item.name}${varSuffix}* x ${item.quantity}\n`;
     }).join('\n');
 
-    const totalMeta = `\n*Paid Amount:* ₦${cartTotal.toLocaleString()} via Paystack`;
+    const pricingBreakdown = `\n*Pricing Breakdown:*\n- Subtotal: ₦${cartTotal.toLocaleString()}\n- Delivery Location: ${selectedLocation ? selectedLocation.location : 'N/A'} (₦${shippingFee.toLocaleString()})\n- Tax (3%): ₦${taxAmount.toLocaleString()}\n`;
+
+    const totalMeta = `\n*Paid Amount:* ₦${grandTotal.toLocaleString()} via Paystack`;
     const footer = `\n\nI have successfully paid online. Please process my delivery! Thank you! ✨`;
     
-    const fullMessage = encodeURIComponent(header + refMeta + customerMeta + phoneMeta + addrMeta + itemsHeader + itemsList + totalMeta + footer);
+    const fullMessage = encodeURIComponent(header + refMeta + customerMeta + phoneMeta + addrMeta + itemsHeader + itemsList + pricingBreakdown + totalMeta + footer);
     return `https://wa.me/2347040273131?text=${fullMessage}`;
   };
 
@@ -439,16 +491,53 @@ export default function Cart() {
                 <span>Subtotal</span>
                 <span>₦{cartTotal.toLocaleString()}</span>
               </div>
+              
+              <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px', marginTop: '12px', marginBottom: '12px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--gray-light)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={14} className="text-gold" /> Delivery Location / State
+                </label>
+                <select
+                  value={selectedLocation ? selectedLocation.id : ''}
+                  onChange={(e) => {
+                    const loc = shippingLocations.find(l => l.id === e.target.value);
+                    setSelectedLocation(loc || null);
+                  }}
+                  className="input-field"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(212, 168, 67, 0.2)',
+                    color: 'var(--white)',
+                    borderRadius: 'var(--radius-sm)',
+                    outline: 'none',
+                    fontFamily: 'var(--font-body)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="" style={{ background: 'var(--bg-dark)' }}>-- Select Location --</option>
+                  {shippingLocations.map(l => (
+                    <option key={l.id} value={l.id} style={{ background: 'var(--bg-dark)' }}>
+                      {l.location} (₦{l.fee.toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="summary-row">
-                <span>Shipping</span>
-                <span className="text-gold">Calculated on checkout</span>
+                <span>Shipping Fee</span>
+                <span>{selectedLocation ? `₦${selectedLocation.fee.toLocaleString()}` : <em style={{ color: 'var(--gray)', fontSize: '0.85rem' }}>Select location</em>}</span>
+              </div>
+              <div className="summary-row">
+                <span>Tax (3%)</span>
+                <span>₦{(cartTotal * 0.03).toLocaleString()}</span>
               </div>
               
               <div className="divider" style={{ margin: '20px 0' }} />
               
               <div className="summary-total-row">
                 <span>Total</span>
-                <span className="text-gold">₦{cartTotal.toLocaleString()}</span>
+                <span className="text-gold">₦{((selectedLocation ? selectedLocation.fee : 0) + cartTotal + cartTotal * 0.03).toLocaleString()}</span>
               </div>
 
               <div className="checkout-options" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
@@ -572,14 +661,23 @@ export default function Cart() {
                 />
               </div>
 
-              <div className="checkout-modal-summary card glass" style={{ padding: '16px', marginTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--gray-light)' }}>
-                  <span>Total Items</span>
-                  <span>{cartItems.reduce((acc, item) => acc + item.quantity, 0)}</span>
+              <div className="checkout-modal-summary card glass" style={{ padding: '16px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                  <span>Subtotal</span>
+                  <span>₦{cartTotal.toLocaleString()}</span>
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                  <span>Shipping ({selectedLocation ? selectedLocation.location : 'N/A'})</span>
+                  <span>₦{(selectedLocation ? selectedLocation.fee : 0).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                  <span>Tax (3%)</span>
+                  <span>₦{(cartTotal * 0.03).toLocaleString()}</span>
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '1.1rem' }}>
                   <span>Grand Total</span>
-                  <span className="text-gold">₦{cartTotal.toLocaleString()}</span>
+                  <span className="text-gold">₦{((selectedLocation ? selectedLocation.fee : 0) + cartTotal + cartTotal * 0.03).toLocaleString()}</span>
                 </div>
               </div>
 
@@ -589,7 +687,7 @@ export default function Cart() {
                 className="btn btn-paystack btn-lg" 
                 style={{ width: '100%', padding: '14px', marginTop: '10px' }}
               >
-                {paymentProcessing ? 'Processing Payment...' : `Pay ₦${cartTotal.toLocaleString()} Now`}
+                {paymentProcessing ? 'Processing Payment...' : `Pay ₦${((selectedLocation ? selectedLocation.fee : 0) + cartTotal + cartTotal * 0.03).toLocaleString()} Now`}
               </button>
               <p className="paystack-disclaimer" style={{ fontSize: '0.75rem', color: 'var(--gray)', textAlign: 'center' }}>
                 <ShieldCheck size={16} /> Card, USSD, and Bank Transfer payments are processed securely by Paystack.

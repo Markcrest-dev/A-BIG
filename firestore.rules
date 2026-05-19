@@ -56,5 +56,14 @@ service cloud.firestore {
       allow read, update: if isAdmin() || (isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == 'admin'));
       allow delete: if isAdmin();
     }
+
+    // 6. Shipping Fees Rules
+    match /shipping_fees/{feeId} {
+      // Anyone can read shipping fees for checkout
+      allow read: if true;
+      // Only designated admin can manage shipping fees
+      allow write: if isAdmin();
+    }
   }
 }
+

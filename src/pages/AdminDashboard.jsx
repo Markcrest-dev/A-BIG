@@ -15,7 +15,8 @@ import {
   Image as ImageIcon,
   X,
   Search,
-  Inbox
+  Inbox,
+  Truck
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -45,6 +46,18 @@ export default function AdminDashboard() {
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [deleteRequestId, setDeleteRequestId] = useState(null);
+
+  // Shipping Fees State
+  const [shippingFees, setShippingFees] = useState([]);
+  const [loadingShipping, setLoadingShipping] = useState(true);
+  
+  // Shipping Fees addition/modification states
+  const [newLocation, setNewLocation] = useState('');
+  const [newFee, setNewFee] = useState('');
+  const [addingShipping, setAddingShipping] = useState(false);
+  const [editShipping, setEditShipping] = useState(null);
+  const [editShippingFee, setEditShippingFee] = useState('');
+  const [deleteShippingId, setDeleteShippingId] = useState(null);
   
   // Extract and listen to URL tab query parameters
   const queryParams = new URLSearchParams(location.search);
@@ -52,7 +65,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(tabParam);
 
   useEffect(() => {
-    if (tabParam === 'products' || tabParam === 'orders' || tabParam === 'requests') {
+    if (tabParam === 'products' || tabParam === 'orders' || tabParam === 'requests' || tabParam === 'shipping') {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -124,6 +137,66 @@ export default function AdminDashboard() {
     });
     return () => unsub();
   }, []);
+
+  // Real-time listener for shipping fees
+  useEffect(() => {
+    const q = query(collection(db, 'shipping_fees'));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      items.sort((a, b) => a.location.localeCompare(b.location));
+      setShippingFees(items);
+      setLoadingShipping(false);
+    }, (err) => {
+      console.error('Firestore shipping fees listener error:', err);
+      setLoadingShipping(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleAddShipping = async (e) => {
+    e.preventDefault();
+    if (!newLocation.trim() || !newFee) return;
+    setAddingShipping(true);
+    try {
+      await addDoc(collection(db, 'shipping_fees'), {
+        location: newLocation.trim(),
+        fee: parseFloat(newFee),
+        createdAt: serverTimestamp()
+      });
+      setNewLocation('');
+      setNewFee('');
+    } catch (err) {
+      console.error('Error adding shipping fee:', err);
+      alert('Failed to add shipping fee: ' + err.message);
+    } finally {
+      setAddingShipping(false);
+    }
+  };
+
+  const handleUpdateShipping = async (e) => {
+    e.preventDefault();
+    if (!editShipping || !editShippingFee) return;
+    try {
+      await updateDoc(doc(db, 'shipping_fees', editShipping.id), {
+        fee: parseFloat(editShippingFee)
+      });
+      setEditShipping(null);
+      setEditShippingFee('');
+    } catch (err) {
+      console.error('Error updating shipping fee:', err);
+      alert('Failed to update shipping fee: ' + err.message);
+    }
+  };
+
+  const handleDeleteShipping = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'shipping_fees', id));
+      setDeleteShippingId(null);
+    } catch (err) {
+      console.error('Error deleting shipping fee:', err);
+      alert('Failed to delete shipping fee: ' + err.message);
+    }
+  };
 
   const handleAdd = async (data) => {
     setSaving(true);
@@ -253,6 +326,9 @@ export default function AdminDashboard() {
           {activeTab === 'requests' && (
             <p className="admin-count">{filteredRequests.length} restock request{filteredRequests.length !== 1 ? 's' : ''}</p>
           )}
+          {activeTab === 'shipping' && (
+            <p className="admin-count">{shippingFees.length} shipping location{shippingFees.length !== 1 ? 's' : ''}</p>
+          )}
         </div>
         <div className="admin-actions">
           {activeTab === 'products' && (
@@ -323,6 +399,25 @@ export default function AdminDashboard() {
           Restock Requests ({requests.length})
           {activeTab === 'requests' && <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'var(--gold)' }} />}
         </button>
+        <button 
+          className={`admin-tab-btn ${activeTab === 'shipping' ? 'active' : ''}`}
+          onClick={() => navigate('/admin/dashboard?tab=shipping')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: activeTab === 'shipping' ? 'var(--gold)' : 'var(--gray)',
+            fontSize: '1.1rem',
+            fontFamily: 'var(--font-heading)',
+            fontWeight: activeTab === 'shipping' ? 600 : 400,
+            cursor: 'pointer',
+            position: 'relative',
+            paddingBottom: '8px',
+            transition: 'var(--transition)'
+          }}
+        >
+          Shipping Fees ({shippingFees.length})
+          {activeTab === 'shipping' && <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'var(--gold)' }} />}
+        </button>
       </div>
 
       {/* Add / Edit Product Modal */}
@@ -385,6 +480,53 @@ export default function AdminDashboard() {
               <button className="btn btn-outline" onClick={() => setDeleteRequestId(null)}>Cancel</button>
               <button className="btn btn-danger" onClick={() => handleDeleteRequest(deleteRequestId)}>Delete</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Shipping Location Confirmation */}
+      {deleteShippingId && (
+        <div className="modal-overlay" onClick={() => setDeleteShippingId(null)}>
+          <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
+            <button className="wa-close" onClick={() => setDeleteShippingId(null)}>✕</button>
+            <AlertTriangle size={36} className="text-gold" style={{ display: 'block', margin: '0 auto 12px' }} />
+            <h3>Delete Shipping Location?</h3>
+            <p>This will remove this location from customer checkout options.</p>
+            <div className="form-actions">
+              <button className="btn btn-outline" onClick={() => setDeleteShippingId(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={() => handleDeleteShipping(deleteShippingId)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Shipping Fee Modal */}
+      {editShipping && (
+        <div className="modal-overlay" onClick={() => setEditShipping(null)}>
+          <div className="modal-content admin-modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <button className="wa-close" onClick={() => setEditShipping(null)}>✕</button>
+            <h3>Edit Shipping Fee</h3>
+            <p style={{ color: 'var(--gray)', fontSize: '0.9rem', marginBottom: '20px' }}>
+              Update the shipping fee for <strong>{editShipping.location}</strong>.
+            </p>
+            <form onSubmit={handleUpdateShipping} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="input-group">
+                <label>Shipping Fee (₦)</label>
+                <input
+                  type="number"
+                  className="input-field"
+                  value={editShippingFee}
+                  onChange={e => setEditShippingFee(e.target.value)}
+                  placeholder="e.g. 2500"
+                  required
+                  min="0"
+                />
+              </div>
+              <div className="form-actions" style={{ marginTop: '10px' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setEditShipping(null)}>Cancel</button>
+                <button type="submit" className="btn btn-gold">Update Fee</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -574,7 +716,18 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ verticalAlign: 'top' }}>
                           <span className="table-price" style={{ fontSize: '1.1rem' }}>₦{parseFloat(o.totalAmount || 0).toLocaleString()}</span>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--gray-light)', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {o.subtotalAmount !== undefined && (
+                              <span>Subtotal: ₦{parseFloat(o.subtotalAmount).toLocaleString()}</span>
+                            )}
+                            {o.shippingFee !== undefined && (
+                              <span>Shipping: ₦{parseFloat(o.shippingFee).toLocaleString()} ({o.shippingLocation || 'N/A'})</span>
+                            )}
+                            {o.taxAmount !== undefined && (
+                              <span>Tax (3%): ₦{parseFloat(o.taxAmount).toLocaleString()}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <CheckCircle size={12} /> Paid Online
                           </div>
                         </td>
@@ -745,6 +898,119 @@ export default function AdminDashboard() {
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Shipping Fees Tab Rendering */}
+      {activeTab === 'shipping' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+            {/* Add New Location Card */}
+            <div className="card glass" style={{ padding: '24px', borderRadius: 'var(--radius)' }}>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--gold)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={18} /> Add Delivery Location
+              </h3>
+              <form onSubmit={handleAddShipping} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="input-group">
+                  <label>State / Region Name</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={newLocation}
+                    onChange={e => setNewLocation(e.target.value)}
+                    placeholder="e.g. Lagos, Abuja, Rivers"
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Shipping Fee (₦)</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={newFee}
+                    onChange={e => setNewFee(e.target.value)}
+                    placeholder="e.g. 2000"
+                    required
+                    min="0"
+                  />
+                </div>
+                <button type="submit" disabled={addingShipping} className="btn btn-gold" style={{ marginTop: '8px', width: '100%' }}>
+                  {addingShipping ? 'Adding Location...' : 'Add Shipping Fee'}
+                </button>
+              </form>
+            </div>
+
+            {/* Quick Stats / Info Card */}
+            <div className="card glass" style={{ padding: '24px', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--gold)', marginBottom: '12px' }}>Nationwide Delivery</h3>
+              <p style={{ color: 'var(--gray-light)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                Define flat shipping rates based on delivery locations. During checkout, customers will select their delivery location from a dropdown, and the matching shipping fee will be added to their order.
+              </p>
+              <div className="divider" style={{ margin: '16px 0', borderColor: 'rgba(212,168,67,0.1)' }} />
+              <p style={{ color: 'var(--gray)', fontSize: '0.85rem' }}>
+                💡 <strong>Tip:</strong> Create an "Other States" or default option if you want to charge a fallback rate for locations not listed.
+              </p>
+            </div>
+          </div>
+
+          {loadingShipping ? (
+            <div className="admin-loading">
+              <div className="skeleton" style={{ height: 60, marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 60, marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 60 }} />
+            </div>
+          ) : shippingFees.length === 0 ? (
+            <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <MapPin size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
+              <h3>No Shipping Fees Set</h3>
+              <p>Add a shipping location and fee above to get started with nationwide delivery calculations.</p>
+            </div>
+          ) : (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Delivery Location</th>
+                    <th>Shipping Fee</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shippingFees.map(f => (
+                    <tr key={f.id}>
+                      <td>
+                        <span className="table-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <MapPin size={16} className="text-gold" /> {f.location}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="table-price">₦{f.fee.toLocaleString()}</span>
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                              setEditShipping(f);
+                              setEditShippingFee(String(f.fee));
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => setDeleteShippingId(f.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
