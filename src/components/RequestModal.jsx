@@ -114,7 +114,15 @@ export default function RequestModal({ product, onClose, initialQuantity = 1 }) 
       setSuccess(true);
     } catch (err) {
       console.error('Error submitting restock request:', err);
-      setError(err.message || 'Failed to submit request. Please try again.');
+      let userFriendlyError = 'Failed to submit request. Please try again.';
+      if (err.message?.includes('NOT_FOUND') || err.code === 'not-found') {
+        userFriendlyError = 'Firestore database not found. ⚠️ Please go to the Firebase Console, select your project ("abig-glow-scents"), navigate to "Firestore Database" in the sidebar, and click "Create Database".';
+      } else if (err.message?.includes('permission') || err.code === 'permission-denied') {
+        userFriendlyError = 'Permission denied. ⚠️ Please check your Firestore Security Rules in the Firebase Console (Firestore Database > Rules) and ensure writes are permitted for the "product_requests" collection.';
+      } else {
+        userFriendlyError = err.message || userFriendlyError;
+      }
+      setError(userFriendlyError);
     } finally {
       setLoading(false);
     }
