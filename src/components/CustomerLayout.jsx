@@ -14,17 +14,27 @@ import {
   Menu, 
   X, 
   User,
-  Bell
+  Bell,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import './CustomerLayout.css';
 import logoImg from '../assets/images/a_big_logo.png';
 
 export default function CustomerLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('customer_sidebar_collapsed');
+    return saved === 'true';
+  });
   const { currentUser, logout } = useAuth();
   const { cartCount } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    localStorage.setItem('customer_sidebar_collapsed', sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   // Load custom profile display name if saved
   const [displayName, setDisplayName] = useState('');
@@ -149,11 +159,26 @@ export default function CustomerLayout() {
       )}
 
       {/* Sidebar navigation */}
-      <aside className={`dashboard-sidebar glass ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`dashboard-sidebar glass ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        {/* Toggle Button for Desktop */}
+        <button 
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+
         <div className="sidebar-top">
           <Link to="/" className="sidebar-logo-wrap">
-            <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
-            <span className="sidebar-tag">CUSTOMER PANEL</span>
+            {sidebarCollapsed ? (
+              <span className="sidebar-logo-collapsed-text">A</span>
+            ) : (
+              <>
+                <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
+                <span className="sidebar-tag">CUSTOMER PANEL</span>
+              </>
+            )}
           </Link>
           <button 
             className="sidebar-close-btn" 
@@ -247,7 +272,7 @@ export default function CustomerLayout() {
       </aside>
 
       {/* Page Content Viewport */}
-      <main className="dashboard-main-content">
+      <main className={`dashboard-main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="content-inner container">
           <Outlet />
         </div>

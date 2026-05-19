@@ -12,16 +12,26 @@ import {
   Menu, 
   X, 
   ShieldCheck,
-  Bell
+  Bell,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import './AdminLayout.css';
 import logoImg from '../assets/images/a_big_logo.png';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('admin_sidebar_collapsed');
+    return saved === 'true';
+  });
   const { currentUser, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    localStorage.setItem('admin_sidebar_collapsed', sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
@@ -129,11 +139,26 @@ export default function AdminLayout() {
       )}
 
       {/* Sidebar navigation */}
-      <aside className={`dashboard-sidebar glass ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`dashboard-sidebar glass ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        {/* Toggle Button for Desktop */}
+        <button 
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+
         <div className="sidebar-top">
           <Link to="/" className="sidebar-logo-wrap">
-            <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
-            <span className="sidebar-tag">ADMIN PORTAL</span>
+            {sidebarCollapsed ? (
+              <span className="sidebar-logo-collapsed-text">A</span>
+            ) : (
+              <>
+                <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
+                <span className="sidebar-tag">ADMIN PORTAL</span>
+              </>
+            )}
           </Link>
           <button 
             className="sidebar-close-btn" 
@@ -225,7 +250,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Page Content Viewport */}
-      <main className="dashboard-main-content">
+      <main className={`dashboard-main-content ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="content-inner container">
           <Outlet />
         </div>
