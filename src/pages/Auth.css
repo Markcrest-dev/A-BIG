@@ -8,6 +8,18 @@
   position: relative;
 }
 
+.auth-container.auth-centered-mode {
+  grid-template-columns: 1fr;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.96), rgba(26, 26, 26, 0.92)), url('../assets/images/perfume_hero_bg_1779016402886.png') center/cover no-repeat;
+}
+
+.auth-container.auth-centered-mode .auth-form-panel {
+  background: transparent;
+}
+
 /* ── Left Showcase Panel ── */
 .auth-showcase-panel {
   position: relative;
@@ -16,17 +28,34 @@
   justify-content: center;
   align-items: center;
   padding: 4rem;
-  background: linear-gradient(135deg, rgba(10, 10, 10, 0.94), rgba(26, 26, 26, 0.88)), url('../assets/images/perfume_hero_bg_1779016402886.png') center/cover no-repeat;
   border-right: 1px solid rgba(212, 168, 67, 0.15);
   overflow: hidden;
+  transition: all 0.5s ease;
+}
+
+.auth-showcase-panel.showcase-login {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.94), rgba(20, 20, 20, 0.88)), url('../assets/images/perfume_hero_bg_1779016402886.png') center/cover no-repeat;
+}
+
+.auth-showcase-panel.showcase-signup {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(10, 10, 10, 0.91)), url('../assets/images/perfume_hero_bg_1779016402886.png') center/cover no-repeat;
 }
 
 .auth-glow-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 30%, rgba(212, 168, 67, 0.08) 0%, transparent 60%);
   z-index: 1;
+  transition: all 0.5s ease;
 }
+
+.showcase-login .auth-glow-overlay {
+  background: radial-gradient(circle at 20% 20%, rgba(212, 168, 67, 0.1) 0%, transparent 60%);
+}
+
+.showcase-signup .auth-glow-overlay {
+  background: radial-gradient(circle at 80% 80%, rgba(212, 168, 67, 0.1) 0%, transparent 60%);
+}
+
 
 /* Floating Particles (Skincare Mist/Fragrance Vapors) */
 .auth-particles {

@@ -180,46 +180,73 @@ export default function Auth() {
   };
 
   return (
-    <div className="auth-container fade-in">
-      <div className="auth-showcase-panel">
-        <div className="auth-glow-overlay" />
-        <div className="auth-particles">
-          <div className="particle" />
-          <div className="particle" />
-          <div className="particle" />
-          <div className="particle" />
-        </div>
-        <div className="showcase-content">
-          <div className="showcase-brand">
-            <img src={logoImg} alt="A-BIG Logo" className="showcase-logo" />
-            <h1 className="showcase-title">A-BIG GLOW & SCENTS</h1>
-            <div className="showcase-divider" />
+    <div className={`auth-container ${authMode === 'forgot' ? 'auth-centered-mode' : ''} fade-in`}>
+      {authMode !== 'forgot' && (
+        <div className={`auth-showcase-panel showcase-${authMode}`}>
+          <div className="auth-glow-overlay" />
+          <div className="auth-particles">
+            <div className="particle" />
+            <div className="particle" />
+            <div className="particle" />
+            <div className="particle" />
           </div>
-          <div className="showcase-info-card glass">
-            <Sparkles className="showcase-card-icon" size={32} />
-            <h3>Experience Bespoke Luxury</h3>
-            <p>Unlock custom fragrance matchmaking, tailored organic skincare routines, and secure shopping with lightning fast physical delivery tracking.</p>
+          <div className="showcase-content">
+            <div className="showcase-brand">
+              <img src={logoImg} alt="A-BIG Logo" className="showcase-logo" />
+              <h1 className="showcase-title">A-BIG GLOW & SCENTS</h1>
+              <div className="showcase-divider" />
+            </div>
             
-            <div className="showcase-features">
-              <div className="feature-item">
-                <span className="feature-dot"></span>
-                <span>Premium Quality Oud & Scents</span>
+            {authMode === 'login' ? (
+              <div className="showcase-info-card glass">
+                <Sparkles className="showcase-card-icon" size={32} />
+                <h3>Welcome Back to Luxury</h3>
+                <p>Log in to access your signature scent profile, track your active luxury orders, and explore our custom-curated additions tailored just for you.</p>
+                
+                <div className="showcase-features">
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Access Saved Scent Profiles</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Lightning-fast Dispatch Tracking</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Exclusive Account Member Perks</span>
+                  </div>
+                </div>
               </div>
-              <div className="feature-item">
-                <span className="feature-dot"></span>
-                <span>Bespoke Skincare Selections</span>
+            ) : (
+              <div className="showcase-info-card glass">
+                <Sparkles className="showcase-card-icon" size={32} />
+                <h3>Join the Essence of A-BIG</h3>
+                <p>Register today to unlock our proprietary custom fragrance matchmaking quiz, personalized skincare trackers, and direct bespoke shopping.</p>
+                
+                <div className="showcase-features">
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Proprietary Scent Finder Quizzes</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Custom Blended Luxury Oils & Oud</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-dot"></span>
+                    <span>Secure Worldwide Orders & Payments</span>
+                  </div>
+                </div>
               </div>
-              <div className="feature-item">
-                <span className="feature-dot"></span>
-                <span>Personalized User Profiles</span>
-              </div>
+            )}
+            
+            <div className="showcase-footer">
+              <p>© 2026 A-BIG Glow & Scents. All rights reserved.</p>
             </div>
           </div>
-          <div className="showcase-footer">
-            <p>© 2026 A-BIG Glow & Scents. All rights reserved.</p>
-          </div>
         </div>
-      </div>
+      )}
 
       <div className="auth-form-panel">
         <div className="auth-form-glow" />
