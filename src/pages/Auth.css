@@ -508,5 +508,52 @@
   }
 }
 
+/* ── STRICT DESKTOP VIEWPORT HEIGHT CONSTRAINTS ── */
+@media (min-width: 1025px) {
+  .auth-container {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  
+  .auth-showcase-panel {
+    height: 100vh;
+    max-height: 100vh;
+    padding: 3rem 2.5rem;
+    box-sizing: border-box;
+  }
+
+  .showcase-content {
+    gap: 1.5rem;
+  }
+  
+  .auth-form-panel {
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+}
+
+/* Compact rules for smaller height screens (laptops, monitors) to fit everything without vertical scrollbars */
+@media (max-height: 800px) and (min-width: 1025px) {
+  .auth-form-card {
+    padding: 2.2rem 2.2rem;
+  }
+  .auth-form-section {
+    gap: 1.2rem;
+  }
+  .auth-form-element {
+    gap: 0.9rem;
+  }
+  .auth-form-header {
+    gap: 0.2rem;
+  }
+  .auth-form-header h2 {
+    font-size: 1.7rem;
+  }
+}
+
+
 
 
