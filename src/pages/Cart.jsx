@@ -15,7 +15,8 @@ import {
   AlertCircle,
   ShieldCheck,
   MapPin,
-  Truck
+  Truck,
+  ChevronDown
 } from 'lucide-react';
 import './Cart.css';
 
@@ -496,32 +497,24 @@ export default function Cart() {
                 <label style={{ fontSize: '0.85rem', color: 'var(--gray-light)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <MapPin size={14} className="text-gold" /> Delivery Location / State
                 </label>
-                <select
-                  value={selectedLocation ? selectedLocation.id : ''}
-                  onChange={(e) => {
-                    const loc = shippingLocations.find(l => l.id === e.target.value);
-                    setSelectedLocation(loc || null);
-                  }}
-                  className="input-field"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(212, 168, 67, 0.2)',
-                    color: 'var(--white)',
-                    borderRadius: 'var(--radius-sm)',
-                    outline: 'none',
-                    fontFamily: 'var(--font-body)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="" style={{ background: 'var(--bg-dark)' }}>-- Select Location --</option>
-                  {shippingLocations.map(l => (
-                    <option key={l.id} value={l.id} style={{ background: 'var(--bg-dark)' }}>
-                      {l.location} (₦{l.fee.toLocaleString()})
-                    </option>
-                  ))}
-                </select>
+                <div className="select-location-wrapper">
+                  <select
+                    value={selectedLocation ? selectedLocation.id : ''}
+                    onChange={(e) => {
+                      const loc = shippingLocations.find(l => l.id === e.target.value);
+                      setSelectedLocation(loc || null);
+                    }}
+                    className="select-location-dropdown"
+                  >
+                    <option value="" style={{ background: 'var(--black-light)' }}>-- Select Location --</option>
+                    {shippingLocations.map(l => (
+                      <option key={l.id} value={l.id} style={{ background: 'var(--black-light)' }}>
+                        {l.location} (₦{l.fee.toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="select-chevron" />
+                </div>
               </div>
 
               <div className="summary-row">
