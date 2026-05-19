@@ -11,8 +11,10 @@ export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
-  // Hide Navbar completely on customer and admin dashboard/panel pages
-  const isDashboard = location.pathname.startsWith('/customer') || location.pathname.startsWith('/admin');
+  // Hide Navbar completely on customer/admin dashboards and auth pages
+  const isDashboard = location.pathname.startsWith('/customer') || 
+                      location.pathname.startsWith('/admin') || 
+                      location.pathname === '/auth';
 
   // Handle scroll effect for elegant blur transition
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function Navbar() {
   }, []);
 
   if (isDashboard) {
-    return null; // Sidebars will handle dashboard navigation
+    return null; // Sidebars/Auth will handle distraction-free navigation
   }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
