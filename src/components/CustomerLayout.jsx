@@ -16,7 +16,8 @@ import {
   User,
   Bell,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ClipboardList
 } from 'lucide-react';
 import ProductDetailModal from './ProductDetailModal';
 import RequestModal from './RequestModal';
@@ -100,6 +101,7 @@ export default function CustomerLayout() {
       icon: ShoppingCart, 
       badge: cartCount > 0 ? cartCount : null 
     },
+    { name: 'My Orders', path: '/customer/orders', icon: ClipboardList },
     { name: 'Settings', path: '/customer/settings', icon: SettingsIcon },
   ];
 

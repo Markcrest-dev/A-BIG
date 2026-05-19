@@ -7,6 +7,7 @@ import Shop from './pages/Shop';
 import AdminDashboard from './pages/AdminDashboard';
 import Auth from './pages/Auth';
 import CustomerDashboard from './pages/CustomerDashboard';
+import CustomerOrders from './pages/CustomerOrders';
 import Cart from './pages/Cart';
 import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,6 +38,7 @@ export default function App() {
                 <Route path="dashboard" element={<CustomerDashboard />} />
                 <Route path="shop" element={<Shop />} />
                 <Route path="cart" element={<Cart />} />
+                <Route path="orders" element={<CustomerOrders />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
 
