@@ -173,7 +173,6 @@ export default function CustomerLayout() {
             ) : (
               <>
                 <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
-                <span className="sidebar-tag">CUSTOMER PANEL</span>
               </>
             )}
           </Link>

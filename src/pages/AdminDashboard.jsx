@@ -16,7 +16,9 @@ import {
   X,
   Search,
   Inbox,
-  Truck
+  Truck,
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [deleteOrderId, setDeleteOrderId] = useState(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
   // Restock Requests State
   const [requests, setRequests] = useState([]);
@@ -452,6 +455,212 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* View Customer Order Details Modal */}
+      {selectedOrderDetails && (
+        <div className="modal-overlay" onClick={() => setSelectedOrderDetails(null)}>
+          <div className="modal-content admin-modal order-details-modal glass fade-in" style={{ maxWidth: '850px', width: '95%', padding: '24px', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button className="wa-close" onClick={() => setSelectedOrderDetails(null)}>✕</button>
+            
+            <div className="modal-header-accent" style={{ borderBottom: '1px solid rgba(212,168,67,0.15)', paddingBottom: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'rgba(212,168,67,0.1)', padding: '10px', borderRadius: '10px', color: 'var(--gold)' }}>
+                  <ClipboardList size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--white)' }}>Order Details</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--gray-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Reference: <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--gold)' }}>{selectedOrderDetails.orderReference}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="order-details-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              {/* Left Column: Customer & Shipping Details */}
+              <div className="details-col-left" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <User size={16} className="text-gold" /> Customer Information
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '1.05rem' }}>{selectedOrderDetails.customerName}</div>
+                    
+                    <a href={`mailto:${selectedOrderDetails.customerEmail}`} style={{ textDecoration: 'none', color: 'var(--gray-light)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'var(--transition)' }} className="hover-gold">
+                      <Mail size={14} className="text-gold" /> {selectedOrderDetails.customerEmail}
+                    </a>
+                    
+                    <a href={`tel:${selectedOrderDetails.customerPhone}`} style={{ textDecoration: 'none', color: 'var(--gray-light)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'var(--transition)' }} className="hover-gold">
+                      <Phone size={14} className="text-gold" /> {selectedOrderDetails.customerPhone}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MapPin size={16} className="text-gold" /> Shipping & Location Details
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--gray)' }}>Location:</span>
+                      <strong style={{ color: 'var(--white)', fontSize: '0.9rem' }}>{selectedOrderDetails.shippingLocation || 'N/A'}</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--gray)' }}>Detailed Address:</span>
+                      <span style={{ color: 'var(--white)', fontSize: '0.9rem', lineHeight: '1.4', background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.04)', width: '100%', boxSizing: 'border-box', whiteSpace: 'pre-wrap' }}>
+                        {selectedOrderDetails.shippingAddress}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedOrderDetails.customNote && (
+                  <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(212,168,67,0.15)', background: 'rgba(212,168,67,0.02)' }}>
+                    <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      💬 Customer Instructions
+                    </h4>
+                    <p style={{ color: 'var(--white)', fontSize: '0.88rem', fontStyle: 'italic', margin: 0, lineHeight: '1.4' }}>
+                      "{selectedOrderDetails.customNote}"
+                    </p>
+                  </div>
+                )}
+
+                <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '12px' }}>Order Logistics</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--gray-light)' }}>Order Status:</span>
+                    <select 
+                      value={selectedOrderDetails.status || 'Paid'}
+                      onChange={(e) => {
+                        handleUpdateOrderStatus(selectedOrderDetails.id, e.target.value);
+                        setSelectedOrderDetails(prev => ({ ...prev, status: e.target.value }));
+                      }}
+                      className="status-selector"
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(212,168,67,0.15)',
+                        background: selectedOrderDetails.status === 'Completed' || selectedOrderDetails.status === 'Delivered' 
+                          ? 'rgba(46, 204, 113, 0.12)' 
+                          : selectedOrderDetails.status === 'Shipped' 
+                            ? 'rgba(9, 165, 219, 0.12)' 
+                            : 'rgba(212, 168, 67, 0.12)',
+                        color: selectedOrderDetails.status === 'Completed' || selectedOrderDetails.status === 'Delivered' 
+                          ? '#2ECC71' 
+                          : selectedOrderDetails.status === 'Shipped' 
+                            ? '#09a5db' 
+                            : 'var(--gold)',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="Paid">Paid</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Order Items & Pricing Breakdown */}
+              <div className="details-col-right" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)', flex: 1 }}>
+                  <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Package size={16} className="text-gold" /> Ordered Items ({selectedOrderDetails.items?.length || 0})
+                  </h4>
+                  <div className="details-items-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {selectedOrderDetails.items?.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div className="table-thumb" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                          {item.mediaType === 'video' ? (
+                            <video src={item.mediaUrl} muted style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                          ) : item.mediaUrl ? (
+                            <img src={item.mediaUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                          ) : (
+                            <div className="thumb-placeholder" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                              <ImageIcon size={14} className="text-gray" />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                          {item.selectedVariation && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--gold)', fontWeight: 600, marginTop: '2px' }}>
+                              Style: {item.selectedVariation.name}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--gray-light)', marginTop: '2px' }}>
+                            ₦{parseFloat(item.price).toLocaleString()} each
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--gold)', fontWeight: 600, background: 'rgba(212,168,67,0.08)', padding: '2px 6px', borderRadius: '4px', marginRight: '8px' }}>
+                            {item.quantity}x
+                          </span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--white)' }}>
+                            ₦{(parseFloat(item.price) * item.quantity).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="details-section-card glass" style={{ padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ color: 'var(--gold)', fontSize: '1rem', marginTop: 0, marginBottom: '12px' }}>Payment & Billing</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                      <span>Subtotal:</span>
+                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>₦{parseFloat(selectedOrderDetails.subtotalAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                      <span>Shipping Fee ({selectedOrderDetails.shippingLocation || 'N/A'}):</span>
+                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>₦{parseFloat(selectedOrderDetails.shippingFee || 0).toLocaleString()}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--gray-light)' }}>
+                      <span>Tax (3%):</span>
+                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>₦{parseFloat(selectedOrderDetails.taxAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 600 }}>
+                      <span style={{ color: 'var(--white)' }}>Grand Total:</span>
+                      <span className="text-gold">₦{parseFloat(selectedOrderDetails.totalAmount || 0).toLocaleString()}</span>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '10px', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--gray-light)' }}>
+                        Payment Method: <strong style={{ color: '#2ECC71' }}>Paid Online (Paystack)</strong>
+                      </div>
+                      {selectedOrderDetails.paymentReference && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--gray)', fontFamily: 'monospace' }}>
+                          Ref: {selectedOrderDetails.paymentReference}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '24px', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="btn btn-outline" onClick={() => setSelectedOrderDetails(null)}>Close</button>
+              <button 
+                className="btn btn-danger" 
+                onClick={() => {
+                  setDeleteOrderId(selectedOrderDetails.id);
+                  setSelectedOrderDetails(null);
+                }}
+              >
+                Delete Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Order Confirmation */}
       {deleteOrderId && (
         <div className="modal-overlay" onClick={() => setDeleteOrderId(null)}>
@@ -680,7 +889,15 @@ export default function AdminDashboard() {
                       ? o.createdAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
                       : (o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'Processing');
                     return (
-                      <tr key={o.id}>
+                      <tr 
+                        key={o.id} 
+                        style={{ cursor: 'pointer', transition: 'var(--transition)' }}
+                        className="admin-order-row"
+                        onClick={(e) => {
+                          if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+                          setSelectedOrderDetails(o);
+                        }}
+                      >
                         <td style={{ verticalAlign: 'top' }}>
                           <div style={{ fontWeight: 600, color: 'var(--white)', fontSize: '0.9rem' }}>{dateStr}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--gold)', marginTop: '4px', fontFamily: 'monospace', fontWeight: 600 }}>{o.orderReference}</div>
@@ -766,7 +983,10 @@ export default function AdminDashboard() {
                           </select>
                         </td>
                         <td style={{ verticalAlign: 'top' }}>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteOrderId(o.id)}>Delete</button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button className="btn btn-gold btn-sm" onClick={() => setSelectedOrderDetails(o)}>View</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteOrderId(o.id)}>Delete</button>
+                          </div>
                         </td>
                       </tr>
                     );

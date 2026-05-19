@@ -30,6 +30,7 @@ export default function Cart() {
   const [showPaystackModal, setShowPaystackModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successOrderRef, setSuccessOrderRef] = useState('');
+  const [completedOrder, setCompletedOrder] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   
@@ -263,6 +264,10 @@ export default function Cart() {
               }
 
               // 4. Clear Cart & Close Modal
+              setCompletedOrder({
+                ...orderData,
+                createdAt: new Date()
+              });
               clearCart();
               setShowPaystackModal(false);
               setSuccessOrderRef(orderRef);
@@ -310,23 +315,37 @@ export default function Cart() {
   };
 
   const getWhatsAppReceiptLink = () => {
-    const taxAmount = cartTotal * 0.03;
-    const shippingFee = selectedLocation ? selectedLocation.fee : 0;
-    const grandTotal = cartTotal + taxAmount + shippingFee;
+    const order = completedOrder || {
+      orderReference: successOrderRef,
+      customerName: deliveryInfo.fullName,
+      customerPhone: deliveryInfo.phone,
+      shippingAddress: `${selectedLocation ? selectedLocation.location : 'N/A'}: ${deliveryInfo.address}`,
+      shippingLocation: selectedLocation ? selectedLocation.location : 'N/A',
+      shippingFee: selectedLocation ? selectedLocation.fee : 0,
+      taxAmount: cartTotal * 0.03,
+      subtotalAmount: cartTotal,
+      totalAmount: cartTotal + cartTotal * 0.03 + (selectedLocation ? selectedLocation.fee : 0),
+      items: cartItems
+    };
+
+    const taxAmount = order.taxAmount;
+    const shippingFee = order.shippingFee;
+    const grandTotal = order.totalAmount;
+    const subtotal = order.subtotalAmount;
 
     const header = `✦ *ONLINE ORDER PAID - A-BIG GLOW & SCENTS* ✦\n`;
-    const refMeta = `*Order Reference:* ${successOrderRef}\n`;
-    const customerMeta = `*Customer:* ${deliveryInfo.fullName} (${currentUser?.email || 'Guest'})\n`;
-    const phoneMeta = `*Phone:* ${deliveryInfo.phone}\n`;
-    const addrMeta = `*Address:* ${deliveryInfo.address} (${selectedLocation ? selectedLocation.location : 'N/A'})\n\n`;
+    const refMeta = `*Order Reference:* ${order.orderReference}\n`;
+    const customerMeta = `*Customer:* ${order.customerName} (${currentUser?.email || 'Guest'})\n`;
+    const phoneMeta = `*Phone:* ${order.customerPhone}\n`;
+    const addrMeta = `*Address:* ${order.shippingAddress}\n\n`;
     const itemsHeader = `*Items Ordered:*\n`;
     
-    const itemsList = cartItems.map((item, idx) => {
+    const itemsList = (order.items || []).map((item, idx) => {
       const varSuffix = item.selectedVariation ? ` (${item.selectedVariation.name})` : '';
       return `${idx + 1}. *${item.name}${varSuffix}* x ${item.quantity}\n`;
     }).join('\n');
 
-    const pricingBreakdown = `\n*Pricing Breakdown:*\n- Subtotal: ₦${cartTotal.toLocaleString()}\n- Delivery Location: ${selectedLocation ? selectedLocation.location : 'N/A'} (₦${shippingFee.toLocaleString()})\n- Tax (3%): ₦${taxAmount.toLocaleString()}\n`;
+    const pricingBreakdown = `\n*Pricing Breakdown:*\n- Subtotal: ₦${subtotal.toLocaleString()}\n- Delivery Location: ${order.shippingLocation || 'N/A'} (₦${shippingFee.toLocaleString()})\n- Tax (3%): ₦${taxAmount.toLocaleString()}\n`;
 
     const totalMeta = `\n*Paid Amount:* ₦${grandTotal.toLocaleString()} via Paystack`;
     const footer = `\n\nI have successfully paid online. Please process my delivery! Thank you! ✨`;
