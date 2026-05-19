@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -181,6 +181,10 @@ export default function Auth() {
 
   return (
     <div className={`auth-container ${authMode === 'forgot' ? 'auth-centered-mode' : ''} fade-in`}>
+      <Link to="/" className="auth-back-home glass">
+        <ArrowLeft size={16} />
+      </Link>
+
       {authMode !== 'forgot' && (
         <div className={`auth-showcase-panel showcase-${authMode}`}>
           <div className="auth-glow-overlay" />
