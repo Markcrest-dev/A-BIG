@@ -140,19 +140,10 @@ export default function AdminLayout() {
 
       {/* Sidebar navigation */}
       <aside className={`dashboard-sidebar glass ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        {/* Toggle Button for Desktop */}
-        <button 
-          className="sidebar-toggle-btn"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-
         <div className="sidebar-top">
           <Link to="/" className="sidebar-logo-wrap">
             {sidebarCollapsed ? (
-              <span className="sidebar-logo-collapsed-text">A</span>
+              <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo-collapsed-img" />
             ) : (
               <>
                 <img src={logoImg} alt="A-BIG Logo" className="sidebar-logo" />
@@ -160,17 +151,28 @@ export default function AdminLayout() {
               </>
             )}
           </Link>
-          <button 
-            className="sidebar-close-btn" 
-            onClick={() => setSidebarOpen(false)}
-            aria-label="Close sidebar"
-          >
-            <X size={20} />
-          </button>
+          
+          <div className="sidebar-actions-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              className="sidebar-toggle-btn"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <Menu size={18} />
+            </button>
+
+            <button 
+              className="sidebar-close-btn" 
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* User Card */}
-        <div className="sidebar-user-card card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 16px' }}>
+        <div className="sidebar-user-card card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="admin-avatar-wrap">
               <ShieldCheck size={22} />
