@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import RequestModal from '../components/RequestModal';
 import { 
@@ -133,7 +133,11 @@ export default function Cart() {
                   quantity: item.quantity,
                   category: item.category || '',
                   mediaUrl: item.mediaUrl || '',
-                  mediaType: item.mediaType || ''
+                  mediaType: item.mediaType || '',
+                  selectedVariation: item.selectedVariation ? {
+                    id: item.selectedVariation.id,
+                    name: item.selectedVariation.name
+                  } : null
                 })),
                 totalAmount: cartTotal,
                 paymentMethod: 'Paystack',
@@ -147,9 +151,29 @@ export default function Cart() {
               for (const item of cartItems) {
                 try {
                   const productRef = doc(db, 'products', item.id);
-                  await updateDoc(productRef, {
-                    stock: increment(-item.quantity)
-                  });
+                  if (item.selectedVariation) {
+                    const productSnap = await getDoc(productRef);
+                    if (productSnap.exists()) {
+                      const productData = productSnap.data();
+                      const currentVariations = productData.variations || [];
+                      
+                      const updatedVariations = currentVariations.map(v => {
+                        if (v.name === item.selectedVariation.name) {
+                          return { ...v, stock: Math.max(0, (v.stock || 0) - item.quantity) };
+                        }
+                        return v;
+                      });
+
+                      await updateDoc(productRef, {
+                        variations: updatedVariations,
+                        stock: increment(-item.quantity)
+                      });
+                    }
+                  } else {
+                    await updateDoc(productRef, {
+                      stock: increment(-item.quantity)
+                    });
+                  }
                 } catch (stockErr) {
                   console.error(`Failed to update stock for item ${item.id}:`, stockErr);
                 }
@@ -227,9 +251,10 @@ export default function Cart() {
     const userMeta = `*Customer:* ${currentUser?.email || 'Guest'}\n\n`;
     const itemsHeader = `*Items Ordered:*\n`;
     
-    const itemsList = cartItems.map((item, idx) => (
-      `${idx + 1}. *${item.name}* x ${item.quantity}\n   _Price: ₦${item.price} each_\n   _Subtotal: ₦${(item.price * item.quantity).toLocaleString()}_\n`
-    )).join('\n');
+    const itemsList = cartItems.map((item, idx) => {
+      const varSuffix = item.selectedVariation ? ` (${item.selectedVariation.name})` : '';
+      return `${idx + 1}. *${item.name}${varSuffix}* x ${item.quantity}\n   _Price: ₦${item.price} each_\n   _Subtotal: ₦${(item.price * item.quantity).toLocaleString()}_\n`;
+    }).join('\n');
 
     const footer = `\n-----------------------------------------\n*Grand Total: ₦${cartTotal.toLocaleString()}*\n-----------------------------------------\n\nPlease confirm my order. Thank you! ✨`;
 
@@ -245,9 +270,10 @@ export default function Cart() {
     const addrMeta = `*Address:* ${deliveryInfo.address}\n\n`;
     const itemsHeader = `*Items Ordered:*\n`;
     
-    const itemsList = cartItems.map((item, idx) => (
-      `${idx + 1}. *${item.name}* x ${item.quantity}\n`
-    )).join('\n');
+    const itemsList = cartItems.map((item, idx) => {
+      const varSuffix = item.selectedVariation ? ` (${item.selectedVariation.name})` : '';
+      return `${idx + 1}. *${item.name}${varSuffix}* x ${item.quantity}\n`;
+    }).join('\n');
 
     const totalMeta = `\n*Paid Amount:* ₦${cartTotal.toLocaleString()} via Paystack`;
     const footer = `\n\nI have successfully paid online. Please process my delivery! Thank you! ✨`;
@@ -303,7 +329,7 @@ export default function Cart() {
           {/* Cart Items List */}
           <div className="cart-items-column">
             {cartItems.map((item) => (
-              <div key={item.id} className="cart-item-card card glass">
+              <div key={item.cartItemId || item.id} className="cart-item-card card glass">
                 <div className="cart-item-media">
                   {item.mediaType === 'video' ? (
                     <video src={item.mediaUrl} muted playsInline />
@@ -319,7 +345,12 @@ export default function Cart() {
                 <div className="cart-item-details">
                   <div className="cart-item-info">
                     <h4>{item.name}</h4>
-                    <span className="cart-item-category">{item.category}</span>
+                    {item.selectedVariation && (
+                      <span style={{ display: 'inline-block', fontSize: '0.8rem', color: 'var(--gold)', fontWeight: 600, background: 'rgba(212,168,67,0.08)', padding: '2px 8px', borderRadius: '4px', marginTop: '4px', marginBottom: '8px' }}>
+                        Color: {item.selectedVariation.name}
+                      </span>
+                    )}
+                    <span className="cart-item-category" style={{ display: 'block' }}>{item.category}</span>
                     <p className="cart-item-unit-price">₦{parseFloat(item.price).toLocaleString()} each</p>
                     {item.stock !== undefined && item.quantity >= item.stock && (
                       <button 
@@ -349,7 +380,7 @@ export default function Cart() {
                   <div className="cart-item-actions">
                     <div className="qty-controls">
                       <button 
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)} 
+                        onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity - 1)} 
                         className="qty-btn"
                         aria-label="Decrease quantity"
                       >
@@ -360,7 +391,7 @@ export default function Cart() {
                         const isMaxStock = item.stock !== undefined && item.quantity >= item.stock;
                         return (
                           <button 
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)} 
+                            onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity + 1)} 
                             className="qty-btn"
                             aria-label="Increase quantity"
                             disabled={isMaxStock}
@@ -378,7 +409,7 @@ export default function Cart() {
                     </div>
 
                     <button 
-                      onClick={() => removeFromCart(item.id)} 
+                      onClick={() => removeFromCart(item.cartItemId || item.id)} 
                       className="cart-delete-btn"
                       title="Remove Item"
                     >

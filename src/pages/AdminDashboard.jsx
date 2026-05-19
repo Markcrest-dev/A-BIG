@@ -462,6 +462,15 @@ export default function AdminDashboard() {
                           <span className={`table-stock ${isOutOfStock ? 'out-of-stock' : ''}`}>
                             {isOutOfStock ? 'Out of Stock' : `${p.stock} in stock`}
                           </span>
+                          {p.variations && p.variations.length > 0 && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--gray-light)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              {p.variations.map((v, i) => (
+                                <span key={i} style={{ background: 'rgba(212,168,67,0.05)', padding: '2px 6px', borderRadius: '3px', width: 'fit-content' }}>
+                                  {v.name}: <strong style={{ color: 'var(--gold)' }}>{v.stock}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td>
                           <div className="table-actions">

@@ -34,7 +34,8 @@ export function CartProvider({ children }) {
             // Merge guest cart items into user cart
             const mergedCart = [...userCart];
             guestCart.forEach(guestItem => {
-              const existingIdx = mergedCart.findIndex(item => item.id === guestItem.id);
+              const guestKey = guestItem.cartItemId || guestItem.id;
+              const existingIdx = mergedCart.findIndex(item => (item.cartItemId || item.id) === guestKey);
               if (existingIdx > -1) {
                 // If item exists in user cart, add quantities up to max stock
                 const maxStock = guestItem.stock !== undefined ? guestItem.stock : 999;
@@ -81,36 +82,52 @@ export function CartProvider({ children }) {
     }
   }, [cartItems, currentUser]);
 
-  const addToCart = (product) => {
-    const maxStock = product.stock !== undefined ? product.stock : 999;
+  const addToCart = (product, selectedVariation = null) => {
+    const variation = selectedVariation || product.selectedVariation || null;
+    const cartItemId = variation ? `${product.id}_${variation.name}` : product.id;
+    const maxStock = variation ? variation.stock : (product.stock !== undefined ? product.stock : 999);
+
     setCartItems((prevItems) => {
-      const existing = prevItems.find((item) => item.id === product.id);
+      const existing = prevItems.find((item) => (item.cartItemId || item.id) === cartItemId);
       if (existing) {
         if (existing.quantity >= maxStock) {
           return prevItems;
         }
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
       if (maxStock <= 0) return prevItems;
-      return [...prevItems, { ...product, quantity: 1 }];
+
+      const newCartItem = {
+        ...product,
+        cartItemId,
+        selectedVariation: variation,
+        stock: maxStock
+      };
+
+      if (variation && variation.mediaUrl) {
+        newCartItem.mediaUrl = variation.mediaUrl;
+        newCartItem.mediaType = variation.mediaType || 'image';
+      }
+
+      return [...prevItems, { ...newCartItem, quantity: 1 }];
     });
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+  const removeFromCart = (cartItemId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => (item.cartItemId || item.id) !== cartItemId));
   };
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (cartItemId, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
       return;
     }
     setCartItems((prevItems) =>
       prevItems.map((item) => {
-        if (item.id === productId) {
-          const maxStock = item.stock !== undefined ? item.stock : 999;
+        if ((item.cartItemId || item.id) === cartItemId) {
+          const maxStock = item.selectedVariation ? item.selectedVariation.stock : (item.stock !== undefined ? item.stock : 999);
           const allowedQty = Math.min(quantity, maxStock);
           return { ...item, quantity: allowedQty };
         }
