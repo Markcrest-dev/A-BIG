@@ -1,0 +1,118 @@
+.request-modal-content {
+  background: var(--black-card);
+  border: 1px solid rgba(212, 168, 67, 0.2);
+  box-shadow: var(--shadow), 0 0 30px rgba(212, 168, 67, 0.05);
+  max-width: 460px;
+  position: relative;
+  padding: 36px 28px;
+  border-radius: var(--radius-lg);
+}
+
+.request-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.request-modal-header h3 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  color: var(--white);
+  font-family: var(--font-heading);
+}
+
+.request-subtitle {
+  color: var(--gray-light);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.request-subtitle strong {
+  color: var(--gold);
+}
+
+.request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.request-form .input-group label {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.request-form .input-field {
+  padding: 10px 14px;
+  background: var(--black-light);
+  border: 1px solid rgba(212, 168, 67, 0.15);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-size: 0.92rem;
+  transition: var(--transition);
+}
+
+.request-form .input-field:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(212, 168, 67, 0.15);
+}
+
+.request-form .input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.request-submit-btn {
+  margin-top: 8px;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.request-error {
+  margin-bottom: 16px;
+  padding: 10px;
+  background: rgba(231, 76, 60, 0.08);
+  border: 1px solid rgba(231, 76, 60, 0.25);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.request-success-state p {
+  color: var(--gray-light);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+.success-pulse {
+  animation: pulseSuccess 2s infinite ease-in-out;
+}
+
+@keyframes pulseSuccess {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px rgba(212, 168, 67, 0));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 10px rgba(212, 168, 67, 0.3));
+  }
+}
+
+@media (max-width: 480px) {
+  .request-modal-content {
+    padding: 24px 16px;
+  }
+  .request-modal-header h3 {
+    font-size: 1.4rem;
+  }
+  .request-form .input-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import NotificationDrawer from './NotificationDrawer';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -10,7 +13,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  User 
+  User,
+  Bell
 } from 'lucide-react';
 import './CustomerLayout.css';
 import logoImg from '../assets/images/a_big_logo.png';
@@ -24,6 +28,25 @@ export default function CustomerLayout() {
 
   // Load custom profile display name if saved
   const [displayName, setDisplayName] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
+
+  // Real-time listener for unread notifications count
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      where('read', '==', false)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    }, (err) => {
+      console.error('Error listening to unread customer notifications:', err);
+    });
+    return () => unsub();
+  }, [currentUser]);
+
   useEffect(() => {
     if (currentUser) {
       const savedProfile = localStorage.getItem(`profile_${currentUser.uid}`);
@@ -85,10 +108,36 @@ export default function CustomerLayout() {
         <Link to="/" className="mobile-logo">
           <img src={logoImg} alt="A-BIG Logo" />
         </Link>
-        <Link to="/customer/cart" className="mobile-cart-btn" aria-label="View Cart">
-          <ShoppingCart size={22} />
-          {cartCount > 0 && <span className="mobile-cart-badge">{cartCount}</span>}
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button 
+            className="mobile-notif-btn" 
+            onClick={() => setNotifDrawerOpen(true)}
+            aria-label="View Notifications"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--white)', 
+              cursor: 'pointer', 
+              position: 'relative', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px'
+            }}
+          >
+            <Bell size={22} className={unreadCount > 0 ? "animate-bell text-gold" : ""} />
+            {unreadCount > 0 && (
+              <span className="mobile-cart-badge" style={{ background: 'var(--gold)', color: 'var(--black)', right: '-2px', top: '-2px' }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <Link to="/customer/cart" className="mobile-cart-btn" aria-label="View Cart">
+            <ShoppingCart size={22} />
+            {cartCount > 0 && <span className="mobile-cart-badge">{cartCount}</span>}
+          </Link>
+        </div>
       </header>
 
       {/* Backdrop overlay for mobile drawer */}
@@ -116,14 +165,56 @@ export default function CustomerLayout() {
         </div>
 
         {/* User Card */}
-        <div className="sidebar-user-card card">
-          <div className="user-avatar-wrap">
-            {initials}
+        <div className="sidebar-user-card card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="user-avatar-wrap">
+              {initials}
+            </div>
+            <div className="user-info">
+              <span className="user-name">{displayName}</span>
+              <span className="user-role-badge">Premium Member</span>
+            </div>
           </div>
-          <div className="user-info">
-            <span className="user-name">{displayName}</span>
-            <span className="user-role-badge">Premium Member</span>
-          </div>
+          <button 
+            onClick={() => setNotifDrawerOpen(true)} 
+            className="sidebar-notif-bell-btn"
+            title="View Notifications"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: unreadCount > 0 ? 'var(--gold)' : 'var(--gray-light)',
+              cursor: 'pointer',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '50%',
+              transition: 'var(--transition)'
+            }}
+          >
+            <Bell size={20} className={unreadCount > 0 ? "animate-bell" : ""} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: 'var(--danger)',
+                color: 'var(--white-pure)',
+                borderRadius: '50%',
+                width: '15px',
+                height: '15px',
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 5px rgba(0,0,0,0.5)'
+              }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -161,6 +252,13 @@ export default function CustomerLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Notifications sliding panel */}
+      <NotificationDrawer 
+        isOpen={notifDrawerOpen} 
+        onClose={() => setNotifDrawerOpen(false)} 
+        userId={currentUser?.uid} 
+      />
     </div>
   );
 }

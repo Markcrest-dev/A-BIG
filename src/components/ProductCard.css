@@ -47,3 +47,32 @@
 .product-card.out-of-stock-card .product-media video {
   filter: grayscale(0.2) contrast(0.9);
 }
+
+.product-stock-lbl {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.product-stock-lbl.text-success {
+  background: rgba(46, 204, 113, 0.08);
+  color: var(--success);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.product-stock-lbl.text-warning {
+  background: rgba(212, 168, 67, 0.08);
+  color: var(--gold);
+  border: 1px solid rgba(212, 168, 67, 0.2);
+}
+
+.product-stock-lbl.text-danger {
+  background: rgba(231, 76, 60, 0.08);
+  color: var(--danger);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}

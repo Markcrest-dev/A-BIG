@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import RequestModal from '../components/RequestModal';
 import { 
   ShoppingCart, 
   Lock, 
@@ -20,6 +21,7 @@ export default function Cart() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const { currentUser } = useAuth();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [requestProduct, setRequestProduct] = useState(null);
   
   // Paystack & Checkout State
   const [showPaystackModal, setShowPaystackModal] = useState(false);
@@ -153,7 +155,49 @@ export default function Cart() {
                 }
               }
               
-              // 3. Clear Cart & Close Modal
+              // 3. Log Notifications in Firestore
+              // 3a. Admin Notification
+              try {
+                const adminNotif = {
+                  userId: 'admin',
+                  title: 'New Payment Received',
+                  message: `Customer ${deliveryInfo.fullName} paid ₦${cartTotal.toLocaleString()} for order ${orderRef}.`,
+                  type: 'order_payment',
+                  read: false,
+                  createdAt: serverTimestamp(),
+                  metadata: {
+                    orderRef: orderRef,
+                    customerName: deliveryInfo.fullName,
+                    totalAmount: cartTotal
+                  }
+                };
+                await addDoc(collection(db, 'notifications'), adminNotif);
+              } catch (notifErr) {
+                console.error('Failed to log admin notification:', notifErr);
+              }
+
+              // 3b. Customer Notification
+              if (currentUser) {
+                try {
+                  const customerNotif = {
+                    userId: currentUser.uid,
+                    title: 'Order Placed Successfully',
+                    message: `Thank you for your order! Reference: ${orderRef}. We are preparing your scents.`,
+                    type: 'order_created',
+                    read: false,
+                    createdAt: serverTimestamp(),
+                    metadata: {
+                      orderRef: orderRef,
+                      totalAmount: cartTotal
+                    }
+                  };
+                  await addDoc(collection(db, 'notifications'), customerNotif);
+                } catch (notifErr) {
+                  console.error('Failed to log customer notification:', notifErr);
+                }
+              }
+
+              // 4. Clear Cart & Close Modal
               clearCart();
               setShowPaystackModal(false);
               setSuccessOrderRef(orderRef);
@@ -277,6 +321,29 @@ export default function Cart() {
                     <h4>{item.name}</h4>
                     <span className="cart-item-category">{item.category}</span>
                     <p className="cart-item-unit-price">₦{parseFloat(item.price).toLocaleString()} each</p>
+                    {item.stock !== undefined && item.quantity >= item.stock && (
+                      <button 
+                        className="btn-request-more-cart" 
+                        onClick={() => setRequestProduct(item)}
+                        title="Request additional units for this item"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--gold)',
+                          fontSize: '0.8rem',
+                          fontFamily: 'var(--font-body)',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          padding: '4px 0',
+                          display: 'block',
+                          textAlign: 'left',
+                          marginTop: '4px'
+                        }}
+                      >
+                        Need more units? Request Restock
+                      </button>
+                    )}
                   </div>
 
                   <div className="cart-item-actions">
@@ -499,6 +566,15 @@ export default function Cart() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Scent Request Modal */}
+      {requestProduct && (
+        <RequestModal 
+          product={requestProduct} 
+          onClose={() => setRequestProduct(null)} 
+          initialQuantity={requestProduct.quantity + 1}
+        />
       )}
     </div>
   );

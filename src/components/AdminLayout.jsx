@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import NotificationDrawer from './NotificationDrawer';
 import { 
   Package, 
   ClipboardList, 
@@ -8,7 +11,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  ShieldCheck 
+  ShieldCheck,
+  Bell
 } from 'lucide-react';
 import './AdminLayout.css';
 import logoImg from '../assets/images/a_big_logo.png';
@@ -18,6 +22,24 @@ export default function AdminLayout() {
   const { currentUser, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
+
+  // Real-time listener for unread admin notifications count
+  useEffect(() => {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', 'admin'),
+      where('read', '==', false)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    }, (err) => {
+      console.error('Error listening to unread admin notifications:', err);
+    });
+    return () => unsub();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -72,7 +94,30 @@ export default function AdminLayout() {
         <Link to="/" className="mobile-logo">
           <img src={logoImg} alt="A-BIG Logo" />
         </Link>
-        <div style={{ width: 40 }} /> {/* Spacer for balance */}
+        <button 
+          className="mobile-notif-btn" 
+          onClick={() => setNotifDrawerOpen(true)}
+          aria-label="View Notifications"
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: 'var(--white)', 
+            cursor: 'pointer', 
+            position: 'relative', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: '40px',
+            height: '40px'
+          }}
+        >
+          <Bell size={22} className={unreadCount > 0 ? "animate-bell text-gold" : ""} />
+          {unreadCount > 0 && (
+            <span className="mobile-cart-badge" style={{ background: 'var(--gold)', color: 'var(--black)', right: '2px', top: '2px' }}>
+              {unreadCount}
+            </span>
+          )}
+        </button>
       </header>
 
       {/* Backdrop overlay */}
@@ -100,14 +145,56 @@ export default function AdminLayout() {
         </div>
 
         {/* User Card */}
-        <div className="sidebar-user-card card">
-          <div className="admin-avatar-wrap">
-            <ShieldCheck size={22} />
+        <div className="sidebar-user-card card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="admin-avatar-wrap">
+              <ShieldCheck size={22} />
+            </div>
+            <div className="user-info">
+              <span className="user-name">Store Admin</span>
+              <span className="user-role-badge">{currentUser?.email}</span>
+            </div>
           </div>
-          <div className="user-info">
-            <span className="user-name">Store Admin</span>
-            <span className="user-role-badge">{currentUser?.email}</span>
-          </div>
+          <button 
+            onClick={() => setNotifDrawerOpen(true)} 
+            className="sidebar-notif-bell-btn"
+            title="View Notifications"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: unreadCount > 0 ? 'var(--gold)' : 'var(--gray-light)',
+              cursor: 'pointer',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '50%',
+              transition: 'var(--transition)'
+            }}
+          >
+            <Bell size={20} className={unreadCount > 0 ? "animate-bell" : ""} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: 'var(--danger)',
+                color: 'var(--white-pure)',
+                borderRadius: '50%',
+                width: '15px',
+                height: '15px',
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 5px rgba(0,0,0,0.5)'
+              }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -143,6 +230,13 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Notifications Drawer */}
+      <NotificationDrawer 
+        isOpen={notifDrawerOpen} 
+        onClose={() => setNotifDrawerOpen(false)} 
+        userId="admin" 
+      />
     </div>
   );
 }

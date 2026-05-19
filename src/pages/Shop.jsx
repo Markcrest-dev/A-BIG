@@ -4,9 +4,10 @@ import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ProductCard from '../components/ProductCard';
 import WhatsAppModal from '../components/WhatsAppModal';
+import RequestModal from '../components/RequestModal';
 import Loader from '../components/Loader';
 import { useCart } from '../context/CartContext';
-import { AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
+import { AlertCircle, Sparkles, CheckCircle, Search } from 'lucide-react';
 import './Shop.css';
 
 const ALL = 'All';
@@ -20,6 +21,10 @@ export default function Shop() {
   const { addToCart } = useCart();
   const [toastMessage, setToastMessage] = useState('');
   const navigate = useNavigate();
+
+  // Search & Request Scent States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [requestProduct, setRequestProduct] = useState(null);
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -64,7 +69,16 @@ export default function Shop() {
   }, []);
 
   const categories = [ALL, ...new Set(products.map(p => p.category).filter(Boolean))];
-  const filtered = activeCategory === ALL ? products : products.filter(p => p.category === activeCategory);
+
+  // Combined category and search query filters
+  const filtered = products.filter(p => {
+    const matchesCategory = activeCategory === ALL || p.category === activeCategory;
+    const matchesSearch = searchQuery === '' || 
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="shop-page">
@@ -74,9 +88,26 @@ export default function Shop() {
           <div className="gold-line" />
         </div>
 
+        {/* Search Bar Input */}
+        <div className="shop-search-bar-wrap">
+          <div className="shop-search-inner glass">
+            <Search className="search-icon text-gold" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search for signature perfumes, scents, body sprays..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="shop-search-input"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="search-clear-btn" aria-label="Clear Search">✕</button>
+            )}
+          </div>
+        </div>
+
         {/* Category Filter */}
         {categories.length > 1 && (
-          <div className="category-bar">
+          <div className="category-bar" style={{ marginTop: '20px' }}>
             {categories.map(cat => (
               <button
                 key={cat}
@@ -102,8 +133,17 @@ export default function Shop() {
         {!loading && !error && filtered.length === 0 && (
           <div className="empty-state">
             <Sparkles size={36} className="text-gold" style={{ marginBottom: '12px' }} />
-            <h3>No Products Yet</h3>
-            <p>Our luxurious collection is coming soon. Stay tuned!</p>
+            {products.length === 0 ? (
+              <>
+                <h3>No Products Yet</h3>
+                <p>Our luxurious collection is coming soon. Stay tuned!</p>
+              </>
+            ) : (
+              <>
+                <h3>No Scents Found</h3>
+                <p>We couldn't find any premium items matching your search. Try resetting filters!</p>
+              </>
+            )}
           </div>
         )}
 
@@ -115,6 +155,7 @@ export default function Shop() {
                 product={product} 
                 onOrder={handleOrderNow} 
                 onAddToCart={handleAddToCart}
+                onRequest={setRequestProduct}
               />
             ))}
           </div>
@@ -131,6 +172,14 @@ export default function Shop() {
 
       {/* WhatsApp Modal */}
       <WhatsAppModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+
+      {/* Request Restock Modal */}
+      {requestProduct && (
+        <RequestModal 
+          product={requestProduct} 
+          onClose={() => setRequestProduct(null)} 
+        />
+      )}
     </div>
   );
 }
