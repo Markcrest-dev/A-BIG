@@ -104,8 +104,8 @@ export default function CustomerDashboard() {
 
       {/* Stats Grid */}
       <div className="dashboard-stats-grid">
-        {/* Cart Stat */}
-        <div className="stat-card card glass">
+        {/* Cart Stat (Clickable entire card linking to Shop) */}
+        <Link to="/customer/shop" className="stat-card card glass clickable-stat-card text-decoration-none">
           <div className="stat-card-icon-wrap" style={{ background: 'rgba(212,168,67,0.1)', color: 'var(--gold)' }}>
             <ShoppingCart size={22} />
           </div>
@@ -114,13 +114,13 @@ export default function CustomerDashboard() {
             <h3>{cartCount} Items</h3>
             <p className="stat-card-desc">Total subtotal: <strong className="text-gold">₦{cartTotal.toLocaleString()}</strong></p>
           </div>
-          <Link to="/customer/cart" className="stat-card-link" title="View Cart">
+          <div className="stat-card-link" title="Visit Shop">
             <ChevronRight size={18} />
-          </Link>
-        </div>
+          </div>
+        </Link>
 
-        {/* Orders Stat */}
-        <div className="stat-card card glass">
+        {/* Orders Stat (Clickable entire card linking to Orders History section) */}
+        <a href="#orders-history" className="stat-card card glass clickable-stat-card text-decoration-none">
           <div className="stat-card-icon-wrap" style={{ background: 'rgba(46, 204, 113, 0.1)', color: '#2ECC71' }}>
             <ShoppingBag size={22} />
           </div>
@@ -129,13 +129,13 @@ export default function CustomerDashboard() {
             <h3>{orders.length} Completed</h3>
             <p className="stat-card-desc">Real-time status updates</p>
           </div>
-          <a href="#orders-history" className="stat-card-link" title="View Orders">
+          <div className="stat-card-link" title="View Orders">
             <ChevronRight size={18} />
-          </a>
-        </div>
+          </div>
+        </a>
 
-        {/* Preferences Stat */}
-        <div className="stat-card card glass">
+        {/* Preferences Stat (Clickable entire card linking to Settings) */}
+        <Link to="/customer/settings" className="stat-card card glass clickable-stat-card text-decoration-none">
           <div className="stat-card-icon-wrap" style={{ background: 'rgba(9, 165, 219, 0.1)', color: '#09a5db' }}>
             <Compass size={22} />
           </div>
@@ -144,10 +144,10 @@ export default function CustomerDashboard() {
             <h3>{scentPrefDisplay.split(' ')[0]} Preferred</h3>
             <p className="stat-card-desc">{scentPrefDisplay.split(' ').slice(1).join(' ')} notes curated</p>
           </div>
-          <Link to="/customer/settings" className="stat-card-link" title="Update Profile">
+          <div className="stat-card-link" title="Update Profile">
             <ChevronRight size={18} />
-          </Link>
-        </div>
+          </div>
+        </Link>
       </div>
 
       <div className="dashboard-content-layout">

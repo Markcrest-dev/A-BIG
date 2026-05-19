@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import ProductCard from '../components/ProductCard';
+import ProductDetailModal from '../components/ProductDetailModal';
 import WhatsAppModal from '../components/WhatsAppModal';
 import RequestModal from '../components/RequestModal';
 import Loader from '../components/Loader';
@@ -25,9 +26,11 @@ export default function Shop() {
   // Search & Request Scent States
   const [searchQuery, setSearchQuery] = useState('');
   const [requestProduct, setRequestProduct] = useState(null);
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
+  const [sortBy, setSortBy] = useState('newest');
 
-  const handleAddToCart = (product) => {
-    addToCart(product);
+  const handleAddToCart = (product, selectedVar = null) => {
+    addToCart(product, selectedVar);
     setToastMessage(`Added "${product.name}" to cart!`);
     setTimeout(() => {
       setToastMessage('');
@@ -80,6 +83,23 @@ export default function Shop() {
     return matchesCategory && matchesSearch;
   });
 
+  // Dynamic systematic sorting
+  const sortedProducts = [...filtered].sort((a, b) => {
+    if (sortBy === 'alphabetical') {
+      return (a.name || '').localeCompare(b.name || '');
+    }
+    if (sortBy === 'price-low-high') {
+      return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+    }
+    if (sortBy === 'price-high-low') {
+      return (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0);
+    }
+    // Default: newest first
+    const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+    const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+    return timeB - timeA;
+  });
+
   return (
     <div className="shop-page">
       <section className="products-section container">
@@ -88,8 +108,8 @@ export default function Shop() {
           <div className="gold-line" />
         </div>
 
-        {/* Search Bar Input */}
-        <div className="shop-search-bar-wrap">
+        {/* Search Bar & Sorting Input Wrapper */}
+        <div className="shop-controls-row">
           <div className="shop-search-inner glass">
             <Search className="search-icon text-gold" size={20} />
             <input 
@@ -102,6 +122,20 @@ export default function Shop() {
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="search-clear-btn" aria-label="Clear Search">✕</button>
             )}
+          </div>
+
+          <div className="shop-sort-inner glass">
+            <span className="sort-label text-gold">Sort By:</span>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="shop-sort-select"
+            >
+              <option value="newest">New Arrivals</option>
+              <option value="alphabetical">Alphabetical (A - Z)</option>
+              <option value="price-low-high">Price: Low to High</option>
+              <option value="price-high-low">Price: High to Low</option>
+            </select>
           </div>
         </div>
 
@@ -147,15 +181,16 @@ export default function Shop() {
           </div>
         )}
 
-        {!loading && !error && filtered.length > 0 && (
+        {!loading && !error && sortedProducts.length > 0 && (
           <div className="products-grid">
-            {filtered.map(product => (
+            {sortedProducts.map(product => (
               <ProductCard 
                 key={product.id} 
                 product={product} 
                 onOrder={handleOrderNow} 
                 onAddToCart={handleAddToCart}
                 onRequest={setRequestProduct}
+                onViewDetails={setSelectedDetailProduct}
               />
             ))}
           </div>
@@ -178,6 +213,17 @@ export default function Shop() {
         <RequestModal 
           product={requestProduct} 
           onClose={() => setRequestProduct(null)} 
+        />
+      )}
+
+      {/* Product Details Popup Modal */}
+      {selectedDetailProduct && (
+        <ProductDetailModal
+          product={selectedDetailProduct}
+          onClose={() => setSelectedDetailProduct(null)}
+          onAddToCart={handleAddToCart}
+          onOrder={handleOrderNow}
+          onRequest={setRequestProduct}
         />
       )}
     </div>

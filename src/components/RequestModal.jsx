@@ -89,23 +89,27 @@ export default function RequestModal({ product, onClose, initialQuantity = 1 }) 
 
       await addDoc(collection(db, 'product_requests'), requestData);
 
-      // 2. Log admin notification in Firestore
-      const notificationData = {
-        userId: 'admin',
-        title: 'New Scent Request',
-        message: `Customer ${form.fullName} requested ${qtyVal} units of "${product?.name}".`,
-        type: 'restock_request',
-        read: false,
-        createdAt: serverTimestamp(),
-        metadata: {
-          productId: product?.id || '',
-          productName: product?.name || '',
-          customerName: form.fullName,
-          requestedQuantity: qtyVal
-        }
-      };
+      // 2. Log admin notification in Firestore (wrapped in try-catch to bypass security rule failures for guest/customer writes to notifications)
+      try {
+        const notificationData = {
+          userId: 'admin',
+          title: 'New Scent Request',
+          message: `Customer ${form.fullName} requested ${qtyVal} units of "${product?.name}".`,
+          type: 'restock_request',
+          read: false,
+          createdAt: serverTimestamp(),
+          metadata: {
+            productId: product?.id || '',
+            productName: product?.name || '',
+            customerName: form.fullName,
+            requestedQuantity: qtyVal
+          }
+        };
 
-      await addDoc(collection(db, 'notifications'), notificationData);
+        await addDoc(collection(db, 'notifications'), notificationData);
+      } catch (notifErr) {
+        console.warn('Failed to log admin notification for restock request:', notifErr);
+      }
 
       setSuccess(true);
     } catch (err) {

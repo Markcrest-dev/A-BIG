@@ -93,9 +93,16 @@
   transition: var(--transition);
 }
 
+.stat-card.clickable-stat-card {
+  text-decoration: none !important;
+  color: inherit;
+  cursor: pointer;
+}
+
 .stat-card:hover {
   border-color: rgba(212, 168, 67, 0.3) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .stat-card-icon-wrap {

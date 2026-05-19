@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './ProductCard.css';
 
-export default function ProductCard({ product, onOrder, onAddToCart, onRequest }) {
+export default function ProductCard({ product, onOrder, onAddToCart, onRequest, onViewDetails }) {
   // Set up general media list (main media + additional gallery media)
   const mediaList = [];
   if (product.mediaUrl) {
@@ -56,7 +56,11 @@ export default function ProductCard({ product, onOrder, onAddToCart, onRequest }
 
   return (
     <div className={`product-card card fade-in ${isOutOfStock ? 'out-of-stock-card' : ''}`}>
-      <div className="product-media">
+      <div 
+        className="product-media" 
+        onClick={() => onViewDetails && onViewDetails(product)}
+        style={{ cursor: 'pointer' }}
+      >
         {/* Gallery Navigation Arrows */}
         {mediaList.length > 1 && (
           <div className="gallery-nav-arrows">
@@ -102,6 +106,11 @@ export default function ProductCard({ product, onOrder, onAddToCart, onRequest }
           <img src={displayedMedia.url} alt={product.name} loading="lazy" key={displayedMedia.url} />
         )}
         
+        {/* Luxury hover Quick View Overlay */}
+        <div className="product-media-overlay">
+          <span className="quick-view-badge">Quick View</span>
+        </div>
+        
         {product.category && <span className="product-badge">{product.category}</span>}
         {isOutOfStock && <span className="product-badge badge-out-of-stock">Out of Stock</span>}
 
@@ -134,12 +143,24 @@ export default function ProductCard({ product, onOrder, onAddToCart, onRequest }
 
       <div className="product-body">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-          <h3 className="product-name">{product.name}</h3>
+          <h3 
+            className="product-name" 
+            onClick={() => onViewDetails && onViewDetails(product)}
+            style={{ cursor: 'pointer' }}
+          >
+            {product.name}
+          </h3>
           {stockDisplay}
         </div>
         
         <p className="product-price">₦{product.price.toLocaleString()}</p>
-        <p className="product-desc">{product.description}</p>
+        <p 
+          className="product-desc" 
+          onClick={() => onViewDetails && onViewDetails(product)}
+          style={{ cursor: 'pointer' }}
+        >
+          {product.description}
+        </p>
 
         {/* Variations selector chips */}
         {hasVariations && (

@@ -193,3 +193,38 @@
   text-decoration: line-through;
   opacity: 0.5;
 }
+
+/* Luxury Hover Overlay & Quick View Badge */
+.product-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.product-media:hover .product-media-overlay {
+  opacity: 1;
+}
+
+.quick-view-badge {
+  background: var(--gold);
+  color: var(--black);
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transform: translateY(10px);
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  box-shadow: 0 4px 15px rgba(212, 168, 67, 0.3);
+}
+
+.product-media:hover .quick-view-badge {
+  transform: translateY(0);
+}
