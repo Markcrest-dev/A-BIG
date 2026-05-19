@@ -16,10 +16,8 @@ import {
   User,
   Bell,
   ChevronLeft,
-  ChevronRight,
-  Sparkles
+  ChevronRight
 } from 'lucide-react';
-import ScentFinderModal from './ScentFinderModal';
 import ProductDetailModal from './ProductDetailModal';
 import RequestModal from './RequestModal';
 import './CustomerLayout.css';
@@ -37,7 +35,6 @@ export default function CustomerLayout() {
   const navigate = useNavigate();
 
   // Layout-level modals
-  const [scentFinderOpen, setScentFinderOpen] = useState(false);
   const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
   const [requestProduct, setRequestProduct] = useState(null);
 
@@ -97,7 +94,6 @@ export default function CustomerLayout() {
   const menuItems = [
     { name: 'Dashboard', path: '/customer/dashboard', icon: LayoutDashboard },
     { name: 'Shop Collection', path: '/customer/shop', icon: ShoppingBag },
-    { name: 'Scent Finder Quiz', action: () => setScentFinderOpen(true), icon: Sparkles, highlight: true },
     { 
       name: 'Cart', 
       path: '/customer/cart', 
@@ -310,13 +306,6 @@ export default function CustomerLayout() {
         userId={currentUser?.uid} 
       />
 
-      {/* Scent Finder Quiz */}
-      {scentFinderOpen && (
-        <ScentFinderModal 
-          onClose={() => setScentFinderOpen(false)} 
-          onViewProductDetails={(product) => setSelectedDetailProduct(product)}
-        />
-      )}
 
       {/* Product Detail Modal */}
       {selectedDetailProduct && (
