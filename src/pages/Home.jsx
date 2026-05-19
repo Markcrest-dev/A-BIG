@@ -1,14 +1,24 @@
-import { Link, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import './Home.css';
 import Footer from '../components/Footer';
 import heroBg from '../assets/images/perfume_hero_bg_1779016402886.png';
 import himImg from '../assets/images/collection_him_1779016420226.png';
 import herImg from '../assets/images/collection_her_1779016450767.png';
+import ScentFinderModal from '../components/ScentFinderModal';
 import { useAuth } from '../context/AuthContext';
 import { Sparkles, Gem, Leaf } from 'lucide-react';
 
 export default function Home() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [scentFinderOpen, setScentFinderOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenQuiz = () => setScentFinderOpen(true);
+    window.addEventListener('open-scent-finder', handleOpenQuiz);
+    return () => window.removeEventListener('open-scent-finder', handleOpenQuiz);
+  }, []);
 
   if (currentUser) {
     const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@example.com';
@@ -35,9 +45,9 @@ export default function Home() {
             <Link to="/customer/shop" className="btn btn-gold btn-lg">
               Explore Collection
             </Link>
-            <a href="#collections" className="btn btn-outline btn-lg">
-              Discover More
-            </a>
+            <button onClick={() => setScentFinderOpen(true)} className="btn btn-outline btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} /> Take Scent Quiz
+            </button>
           </div>
         </div>
       </section>
@@ -102,14 +112,38 @@ export default function Home() {
       {/* Call to Action */}
       <section className="cta-section">
         <div className="cta-content container text-center">
+          <span className="hero-badge fade-in" style={{ letterSpacing: '0.15em', marginBottom: '14px' }}>✦ Personalized Consultation ✦</span>
           <h2 className="slide-up">Ready to Find Your Signature Scent?</h2>
-          <p className="slide-up delay-1">Browse our full catalog and elevate your everyday presence.</p>
-          <Link to="/customer/shop" className="btn btn-gold btn-lg slide-up delay-2" style={{ marginTop: '30px' }}>
-            Visit the Shop
-          </Link>
+          <p className="slide-up delay-1" style={{ maxWidth: '560px', margin: '0 auto 20px' }}>
+            Allow our virtual scent expert to consult your personality, preferences, and aesthetic to pinpoint the ultimate luxury match from our vault.
+          </p>
+          <div className="cta-actions slide-up delay-2" style={{ marginTop: '28px', display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => setScentFinderOpen(true)} 
+              className="btn btn-gold btn-lg" 
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+            >
+              <Sparkles size={18} /> Launch Scent Finder Quiz
+            </button>
+            <Link to="/customer/shop" className="btn btn-outline btn-lg">
+              Explore Catalog
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Scent Finder Modal */}
+      {scentFinderOpen && (
+        <ScentFinderModal 
+          onClose={() => setScentFinderOpen(false)} 
+          onViewProductDetails={() => {
+            navigate('/customer/shop');
+          }}
+        />
+      )}
+
       <Footer />
     </div>
   );
 }
+

@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS & AUTHENTICATION
+    // ==========================================
+    
+    // Checks if the user is an authenticated administrator.
+    // Replace 'abigglowscents@gmail.com' or 'admin@example.com' with your actual admin account emails.
+    function isAdmin() {
+      return request.auth != null && 
+             (request.auth.token.email == 'abigglowscents@gmail.com' || 
+              request.auth.token.email == 'admin@example.com');
+    }
+
+    // Checks if the user is the owner of the document being read or modified
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // ==========================================
+    // COLLECTION RULES
+    // ==========================================
+
+    // 1. PRODUCTS COLLECTION
+    // - Anyone can view the catalog of luxury perfumes and scents.
+    // - Only administrators can create, update, or delete products.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // 2. PROFILES COLLECTION
+    // - Customers can view and update only their own profile details.
+    // - Administrators have full read access to manage user customer profiles.
+    match /profiles/{userId} {
+      allow read, write: if isOwner(userId);
+      allow read: if isAdmin();
+    }
+    
+    // 3. ORDERS COLLECTION
+    // - Anyone (including guests and unauthenticated customers) can place an order.
+    // - Customers can read their own orders.
+    // - Administrators can view, update, and delete all orders.
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    
+    // 4. PRODUCT REQUESTS COLLECTION (Restock & Custom Scent Requests)
+    // - Anyone (including unauthenticated guests) can submit restock requests.
+    // - Only administrators can view, update status, and process these requests.
+    match /product_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    
+    // 5. NOTIFICATIONS COLLECTION
+    // - Anyone can trigger a notification record (e.g. order logs or request alerts).
+    // - Customers can read and mark their own notifications as read.
+    // - Administrators can read all admin-targeted notifications and mark them as read.
+    match /notifications/{notificationId} {
+      allow create: if true;
+      allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.userId == 'admin'));
+      allow update: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.userId == 'admin'));
+      allow delete: if isAdmin();
+    }
+  }
+}

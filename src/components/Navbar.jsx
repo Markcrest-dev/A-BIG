@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, ShieldCheck, Sparkles } from 'lucide-react';
 import './Navbar.css';
 import logoImg from '../assets/images/a_big_logo.png';
 
@@ -52,6 +52,16 @@ export default function Navbar() {
 
         <div className="navbar-links">
           
+          <button 
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-scent-finder'))}
+            className="nav-link btn-scent-finder"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gold)', marginRight: '16px', fontWeight: '500' }}
+          >
+            <Sparkles size={16} />
+            <span>Scent Finder</span>
+          </button>
+
           {/* Guest Action */}
           {!currentUser ? (
             <Link to="/auth" className="btn btn-gold btn-sm nav-auth-btn">

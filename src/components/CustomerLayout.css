@@ -519,3 +519,27 @@
     margin-left: 0 !important;
   }
 }
+
+/* Golden Highlight for Scent Finder Nav Item */
+.sidebar-nav-item.nav-item-highlight {
+  color: var(--gold) !important;
+  border-left-color: rgba(212, 168, 67, 0.3);
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(212, 168, 67, 0.01);
+}
+.sidebar-nav-item.nav-item-highlight:hover {
+  background: rgba(212, 168, 67, 0.05) !important;
+  border-left-color: var(--gold);
+}
+.sidebar-nav-item.nav-item-highlight .nav-icon {
+  color: var(--gold) !important;
+}
+
+/* Pulsing effect in collapsed sidebar for highlighted actions */
+.dashboard-sidebar.collapsed .sidebar-nav-item.nav-item-highlight {
+  border: 1px solid rgba(212, 168, 67, 0.25) !important;
+  box-shadow: 0 0 8px rgba(212, 168, 67, 0.1);
+}
+

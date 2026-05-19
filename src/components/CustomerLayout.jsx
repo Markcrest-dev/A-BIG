@@ -16,8 +16,12 @@ import {
   User,
   Bell,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
+import ScentFinderModal from './ScentFinderModal';
+import ProductDetailModal from './ProductDetailModal';
+import RequestModal from './RequestModal';
 import './CustomerLayout.css';
 import logoImg from '../assets/images/a_big_logo.png';
 
@@ -28,9 +32,14 @@ export default function CustomerLayout() {
     return saved === 'true';
   });
   const { currentUser, logout } = useAuth();
-  const { cartCount } = useCart();
+  const { cartCount, addToCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Layout-level modals
+  const [scentFinderOpen, setScentFinderOpen] = useState(false);
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
+  const [requestProduct, setRequestProduct] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('customer_sidebar_collapsed', sidebarCollapsed);
@@ -88,6 +97,7 @@ export default function CustomerLayout() {
   const menuItems = [
     { name: 'Dashboard', path: '/customer/dashboard', icon: LayoutDashboard },
     { name: 'Shop Collection', path: '/customer/shop', icon: ShoppingBag },
+    { name: 'Scent Finder Quiz', action: () => setScentFinderOpen(true), icon: Sparkles, highlight: true },
     { 
       name: 'Cart', 
       path: '/customer/cart', 
@@ -246,8 +256,21 @@ export default function CustomerLayout() {
 
         {/* Navigation Menu */}
         <nav className="sidebar-nav">
-          {menuItems.map(item => {
+          {menuItems.map((item, idx) => {
             const Icon = item.icon;
+            if (item.action) {
+              return (
+                <button 
+                  key={idx}
+                  onClick={item.action}
+                  className={`sidebar-nav-item sidebar-action-nav-item ${item.highlight ? 'nav-item-highlight' : ''}`}
+                  style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <Icon size={20} className="nav-icon" />
+                  <span className="nav-label">{item.name}</span>
+                </button>
+              );
+            }
             const isActive = location.pathname === item.path;
             return (
               <Link 
@@ -286,6 +309,39 @@ export default function CustomerLayout() {
         onClose={() => setNotifDrawerOpen(false)} 
         userId={currentUser?.uid} 
       />
+
+      {/* Scent Finder Quiz */}
+      {scentFinderOpen && (
+        <ScentFinderModal 
+          onClose={() => setScentFinderOpen(false)} 
+          onViewProductDetails={(product) => setSelectedDetailProduct(product)}
+        />
+      )}
+
+      {/* Product Detail Modal */}
+      {selectedDetailProduct && (
+        <ProductDetailModal 
+          product={selectedDetailProduct} 
+          onClose={() => setSelectedDetailProduct(null)}
+          onAddToCart={(p, v) => addToCart(p, v)}
+          onOrder={(p) => {
+            addToCart(p);
+            setSelectedDetailProduct(null);
+            navigate('/customer/cart');
+          }}
+          onRequest={(p) => {
+            setRequestProduct(p);
+          }}
+        />
+      )}
+
+      {/* Request Out-of-stock Scent Modal */}
+      {requestProduct && (
+        <RequestModal 
+          product={requestProduct} 
+          onClose={() => setRequestProduct(null)} 
+        />
+      )}
     </div>
   );
 }
