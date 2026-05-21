@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Bell, BellOff, X, Check, CreditCard, ShoppingBag, AlertCircle, CheckSquare } from 'lucide-react';
+import { Bell, BellOff, X, Check, CreditCard, ShoppingBag, AlertCircle, CheckSquare, Truck, CheckCircle } from 'lucide-react';
 import './NotificationDrawer.css';
 
 export default function NotificationDrawer({ isOpen, onClose, userId }) {
@@ -66,6 +66,12 @@ export default function NotificationDrawer({ isOpen, onClose, userId }) {
         return <CreditCard className="notif-icon-paid" size={18} />;
       case 'order_created':
         return <ShoppingBag className="notif-icon-created" size={18} />;
+      case 'order_shipped':
+        return <Truck className="notif-icon-shipped" size={18} />;
+      case 'order_completed':
+        return <CheckCircle className="notif-icon-completed" size={18} />;
+      case 'package_received':
+        return <CheckCircle className="notif-icon-received" size={18} />;
       case 'restock_request':
         return <AlertCircle className="notif-icon-request" size={18} />;
       default:

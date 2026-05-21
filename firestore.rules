@@ -29,7 +29,14 @@ service cloud.firestore {
       // Customers can view only their own order histories; admins can manage all orders.
       allow create: if isAuthenticated();
       allow read: if isAdmin() || (resource != null && resource.data.userId == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource != null && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'Completed' &&
+        request.resource.data.customerReceived == true
+      );
+      allow delete: if isAdmin();
     }
 
     // 3. Products Catalog Rules

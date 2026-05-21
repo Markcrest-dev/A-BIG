@@ -194,6 +194,18 @@
   color: var(--gold);
 }
 
+.notif-icon-shipped {
+  color: #09a5db;
+}
+
+.notif-icon-completed {
+  color: var(--success);
+}
+
+.notif-icon-received {
+  color: var(--success);
+}
+
 .notif-icon-request {
   color: #09a5db;
 }

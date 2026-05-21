@@ -44,6 +44,12 @@ export default function AdminDashboard() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [deleteOrderId, setDeleteOrderId] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [ordersPage, setOrdersPage] = useState(1);
+
+  // Reset pagination if filtered orders count changes (search triggers this)
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderSearchQuery]);
 
   // Restock Requests State
   const [requests, setRequests] = useState([]);
@@ -243,6 +249,38 @@ export default function AdminDashboard() {
       await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus
       });
+
+      // Notify customer if order status is updated to Shipped or Completed
+      const order = orders.find(o => o.id === orderId);
+      if (order && order.userId && order.userId !== 'guest') {
+        let notifTitle = '';
+        let notifMessage = '';
+        let notifType = '';
+
+        if (newStatus === 'Shipped') {
+          notifTitle = 'Order Shipped 🚚';
+          notifMessage = `Your luxury scents with reference ${order.orderReference} have been shipped and are on the way!`;
+          notifType = 'order_shipped';
+        } else if (newStatus === 'Completed') {
+          notifTitle = 'Order Completed 🎉';
+          notifMessage = `Your luxury order with reference ${order.orderReference} is complete. Thank you for shopping with us!`;
+          notifType = 'order_completed';
+        }
+
+        if (notifTitle) {
+          await addDoc(collection(db, 'notifications'), {
+            userId: order.userId,
+            title: notifTitle,
+            message: notifMessage,
+            type: notifType,
+            read: false,
+            createdAt: serverTimestamp(),
+            metadata: {
+              orderRef: order.orderReference
+            }
+          });
+        }
+      }
     } catch (err) {
       console.error('Error updating order status:', err);
       alert('Failed to update status: ' + err.message);
@@ -841,50 +879,60 @@ export default function AdminDashboard() {
 
       {/* Orders Tab Rendering */}
       {activeTab === 'orders' && (
-        <>
-          {/* Orders Search Bar */}
-          <div className="admin-search-wrap" style={{ marginBottom: '24px', maxWidth: '400px' }}>
-            <div className="shop-search-inner glass" style={{ padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}>
-              <Search className="search-icon text-gold" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search orders by ref, name, item..." 
-                value={orderSearchQuery}
-                onChange={(e) => setOrderSearchQuery(e.target.value)}
-                className="shop-search-input"
-                style={{ padding: '6px 0', fontSize: '0.9rem' }}
-              />
-              {orderSearchQuery && (
-                <button onClick={() => setOrderSearchQuery('')} className="search-clear-btn" style={{ fontSize: '0.85rem' }}>✕</button>
-              )}
-            </div>
-          </div>
+        (() => {
+          // Pagination calculations
+          const itemsPerPage = 12;
+          const totalOrdersPages = Math.ceil(filteredOrders.length / itemsPerPage);
+          const currentOrdersPage = Math.min(ordersPage, totalOrdersPages || 1);
+          const indexOfLastOrder = currentOrdersPage * itemsPerPage;
+          const indexOfFirstOrder = indexOfLastOrder - itemsPerPage;
+          const paginatedOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
 
-          {loadingOrders ? (
-            <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <ClipboardList size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
-              <h3>{orders.length === 0 ? 'No Orders Recorded' : 'No Orders Match'}</h3>
-              <p style={{ color: 'var(--gray-light)' }}>
-                {orders.length === 0 ? 'Orders paid via Paystack will automatically appear here in real-time.' : 'Try adjusting your search criteria.'}
-              </p>
-            </div>
-          ) : (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Order Reference</th>
-                    <th>Customer Information</th>
-                    <th>Ordered Scents/Items</th>
-                    <th>Grand Total</th>
-                    <th>Order Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map(o => {
+          return (
+            <>
+              {/* Orders Search Bar */}
+              <div className="admin-search-wrap" style={{ marginBottom: '24px', maxWidth: '400px' }}>
+                <div className="shop-search-inner glass" style={{ padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}>
+                  <Search className="search-icon text-gold" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Search orders by ref, name, item..." 
+                    value={orderSearchQuery}
+                    onChange={(e) => setOrderSearchQuery(e.target.value)}
+                    className="shop-search-input"
+                    style={{ padding: '6px 0', fontSize: '0.9rem' }}
+                  />
+                  {orderSearchQuery && (
+                    <button onClick={() => setOrderSearchQuery('')} className="search-clear-btn" style={{ fontSize: '0.85rem' }}>✕</button>
+                  )}
+                </div>
+              </div>
+
+              {loadingOrders ? (
+                <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
+              ) : filteredOrders.length === 0 ? (
+                <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                  <ClipboardList size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
+                  <h3>{orders.length === 0 ? 'No Orders Recorded' : 'No Orders Match'}</h3>
+                  <p style={{ color: 'var(--gray-light)' }}>
+                    {orders.length === 0 ? 'Orders paid via Paystack will automatically appear here in real-time.' : 'Try adjusting your search criteria.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Order Reference</th>
+                        <th>Customer Information</th>
+                        <th>Ordered Scents/Items</th>
+                        <th>Grand Total</th>
+                        <th>Order Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedOrders.map(o => {
                     const dateStr = o.createdAt?.toDate 
                       ? o.createdAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
                       : (o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'Processing');
@@ -995,8 +1043,40 @@ export default function AdminDashboard() {
               </table>
             </div>
           )}
+          {totalOrdersPages > 1 && (
+            <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '16px' }}>
+              <button 
+                onClick={() => setOrdersPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentOrdersPage === 1}
+                className="btn btn-outline btn-sm"
+                style={{ minWidth: '80px' }}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalOrdersPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setOrdersPage(pageNum)}
+                  className={`btn btn-sm ${currentOrdersPage === pageNum ? 'btn-gold' : 'btn-outline'}`}
+                  style={{ minWidth: '36px', padding: '6px' }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button 
+                onClick={() => setOrdersPage(prev => Math.min(prev + 1, totalOrdersPages))} 
+                disabled={currentOrdersPage === totalOrdersPages}
+                className="btn btn-outline btn-sm"
+                style={{ minWidth: '80px' }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
-      )}
+      );
+    })()
+  )}
 
       {/* Restock Requests Tab Rendering */}
       {activeTab === 'requests' && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { 
   ClipboardList, 
@@ -25,6 +25,12 @@ export default function CustomerOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination if total items count changes (e.g. initial fetch)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [orders.length]);
 
   // Real-time listener for user's orders
   useEffect(() => {
@@ -72,9 +78,48 @@ export default function CustomerOrders() {
 
   // Format WhatsApp query message
   const getWhatsAppInquiryLink = (order) => {
-    const phone = '+2348123456789'; // Default administrative hotline
+    const phone = '+2347040273131'; // Primary hotline number
     const msg = `Hello A-BIG Glow & Scents, I am inquiring about my order reference *${order.orderReference}* (Status: ${order.status || 'Paid'}). Could you please check on the delivery schedule for me? Thank you!`;
-    return `https://wa.me/2348123456789?text=${encodeURIComponent(msg)}`;
+    return `https://wa.me/2347040273131?text=${encodeURIComponent(msg)}`;
+  };
+
+  const handleConfirmReceipt = async (orderId) => {
+    try {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const confirmText = "Have you safely received your order? This will mark your order as Completed and notify our administrative dispatch coordinators. ✨";
+      if (!window.confirm(confirmText)) return;
+
+      // 1. Update order status and customerReceived flag in Firestore
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'Completed',
+        customerReceived: true
+      });
+
+      // 2. Log Admin Notification
+      const adminNotif = {
+        userId: 'admin',
+        title: 'Package Received by Customer',
+        message: `Customer ${order.customerName} has confirmed receipt of order ${order.orderReference}.`,
+        type: 'package_received',
+        read: false,
+        createdAt: serverTimestamp(),
+        metadata: {
+          orderRef: order.orderReference,
+          customerName: order.customerName
+        }
+      };
+      await addDoc(collection(db, 'notifications'), adminNotif);
+
+      // 3. Update local state
+      setSelectedOrder(prev => ({ ...prev, status: 'Completed', customerReceived: true }));
+
+      alert("Thank you! Receipt confirmed. The administrator has been notified. ✦");
+    } catch (err) {
+      console.error('Failed to confirm order receipt:', err);
+      alert('Error updating receipt: ' + err.message);
+    }
   };
 
   return (
@@ -148,19 +193,29 @@ export default function CustomerOrders() {
           <p>Discover our beautiful collections of signature fragrances and place your first luxurious order today.</p>
         </div>
       ) : (
-        <div className="orders-table-card card glass">
-          <div className="orders-table-wrapper">
-            <table className="orders-list-table">
-              <thead>
-                <tr>
-                  <th>Order Info</th>
-                  <th>Purchased Items</th>
-                  <th>Total Amount</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map(order => {
+        (() => {
+          // Pagination calculations
+          const itemsPerPage = 12;
+          const totalPages = Math.ceil(orders.length / itemsPerPage);
+          const currentOrdersPage = Math.min(currentPage, totalPages || 1);
+          const indexOfLastItem = currentOrdersPage * itemsPerPage;
+          const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+          const paginatedOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+
+          return (
+            <div className="orders-table-card card glass">
+              <div className="orders-table-wrapper">
+                <table className="orders-list-table">
+                  <thead>
+                    <tr>
+                      <th>Order Info</th>
+                      <th>Purchased Items</th>
+                      <th>Total Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedOrders.map(order => {
                   const dateStr = order.createdAt?.toDate 
                     ? order.createdAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) 
                     : (order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Processing');
@@ -202,11 +257,43 @@ export default function CustomerOrders() {
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                    disabled={currentOrdersPage === 1}
+                    className="btn btn-outline btn-sm"
+                    style={{ minWidth: '80px' }}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`btn btn-sm ${currentOrdersPage === pageNum ? 'btn-gold' : 'btn-outline'}`}
+                      style={{ minWidth: '36px', padding: '6px' }}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                    disabled={currentOrdersPage === totalPages}
+                    className="btn btn-outline btn-sm"
+                    style={{ minWidth: '80px' }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {/* Full Customer Order Details Modal Popup */}
@@ -260,6 +347,65 @@ export default function CustomerOrders() {
                 </div>
               </div>
             </div>
+
+            {/* Shipped / Received Banner Prompts */}
+            {selectedOrder.status === 'Shipped' && !selectedOrder.customerReceived && (
+              <div className="receipt-prompt-banner" style={{
+                background: 'rgba(46,204,113,0.1)',
+                border: '1px solid rgba(46,204,113,0.3)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Truck style={{ color: '#2ecc71' }} size={20} />
+                  <div>
+                    <strong style={{ color: '#2ecc71', fontSize: '0.95rem', display: 'block' }}>Your order has been shipped!</strong>
+                    <span style={{ color: 'var(--gray-light)', fontSize: '0.85rem' }}>Have you received your package? Please click confirm below to notify us.</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleConfirmReceipt(selectedOrder.id)}
+                  className="btn btn-sm"
+                  style={{
+                    background: '#2ecc71',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  I've Received It
+                </button>
+              </div>
+            )}
+
+            {selectedOrder.customerReceived && (
+              <div className="receipt-prompt-banner" style={{
+                background: 'rgba(46,204,113,0.05)',
+                border: '1px solid rgba(46,204,113,0.15)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <CheckCircle style={{ color: '#2ecc71' }} size={20} />
+                <div>
+                  <strong style={{ color: '#2ecc71', fontSize: '0.95rem', display: 'block' }}>Package Received Confirmed</strong>
+                  <span style={{ color: 'var(--gray-light)', fontSize: '0.85rem' }}>You confirmed receipt of this package on your end. Thank you!</span>
+                </div>
+              </div>
+            )}
 
             {/* Content Grid */}
             <div className="order-details-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
@@ -374,15 +520,38 @@ export default function CustomerOrders() {
 
             {/* Footer Action Buttons */}
             <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '24px', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <a 
-                href={getWhatsAppInquiryLink(selectedOrder)} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="btn btn-gold btn-sm" 
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                <MessageSquare size={14} /> Contact Support
-              </a>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <a 
+                  href={getWhatsAppInquiryLink(selectedOrder)} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-gold btn-sm" 
+                  style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <MessageSquare size={14} /> Contact Support
+                </a>
+                
+                {selectedOrder.status === 'Shipped' && !selectedOrder.customerReceived && (
+                  <button 
+                    onClick={() => handleConfirmReceipt(selectedOrder.id)}
+                    className="btn btn-sm"
+                    style={{
+                      background: '#2ecc71',
+                      color: 'white',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <CheckCircle size={14} /> Confirm Package Received
+                  </button>
+                )}
+              </div>
               <button className="btn btn-outline btn-sm" onClick={() => setSelectedOrder(null)}>Close</button>
             </div>
           </div>
