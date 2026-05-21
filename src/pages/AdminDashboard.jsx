@@ -35,9 +35,13 @@ export default function AdminDashboard() {
   const { logout } = useAuth();
 
   // Search States
-  const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [orderSearchQuery, setOrderSearchQuery] = useState('');
-  const [requestSearchQuery, setRequestSearchQuery] = useState('');
+  // Products Pagination State
+  const [productsPage, setProductsPage] = useState(1);
+
+  // Reset pagination if filtered products count changes (search triggers this)
+  useEffect(() => {
+    setProductsPage(1);
+  }, [productSearchQuery]);
 
   // Orders State
   const [orders, setOrders] = useState([]);
@@ -786,95 +790,139 @@ export default function AdminDashboard() {
 
       {/* Product Catalog Tab Rendering */}
       {activeTab === 'products' && (
-        <>
-          {/* Catalog Search Bar */}
-          <div className="admin-search-wrap" style={{ marginBottom: '24px', maxWidth: '400px' }}>
-            <div className="shop-search-inner glass" style={{ padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}>
-              <Search className="search-icon text-gold" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search catalog by name, category..." 
-                value={productSearchQuery}
-                onChange={(e) => setProductSearchQuery(e.target.value)}
-                className="shop-search-input"
-                style={{ padding: '6px 0', fontSize: '0.9rem' }}
-              />
-              {productSearchQuery && (
-                <button onClick={() => setProductSearchQuery('')} className="search-clear-btn" style={{ fontSize: '0.85rem' }}>✕</button>
-              )}
-            </div>
-          </div>
+        (() => {
+          // Pagination calculations
+          const itemsPerPage = 12;
+          const totalProductsPages = Math.ceil(filteredProducts.length / itemsPerPage);
+          const currentProductsPage = Math.min(productsPage, totalProductsPages || 1);
+          const indexOfLastProduct = currentProductsPage * itemsPerPage;
+          const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+          const paginatedProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
-          {loading ? (
-            <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <Package size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
-              <h3>{products.length === 0 ? 'No Products' : 'No Results Match'}</h3>
-              <p>{products.length === 0 ? 'Click "Add Product" to get started.' : 'Try adjusting your search criteria.'}</p>
-            </div>
-          ) : (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Media</th>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th>Category</th>
-                    <th>Stock</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map(p => {
-                    const isOutOfStock = p.stock === undefined || p.stock <= 0;
-                    return (
-                      <tr key={p.id}>
-                        <td>
-                          <div className="table-thumb">
-                            {p.mediaType === 'video' ? (
-                              <video src={p.mediaUrl} muted />
-                            ) : p.mediaUrl ? (
-                              <img src={p.mediaUrl} alt={p.name} />
-                            ) : (
-                              <div className="thumb-placeholder">
-                                <ImageIcon size={18} className="text-gray" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td><span className="table-name">{p.name}</span></td>
-                        <td><span className="table-price">₦{p.price.toLocaleString()}</span></td>
-                        <td><span className="table-category">{p.category}</span></td>
-                        <td>
-                          <span className={`table-stock ${isOutOfStock ? 'out-of-stock' : ''}`}>
-                            {isOutOfStock ? 'Out of Stock' : `${p.stock} in stock`}
-                          </span>
-                          {p.variations && p.variations.length > 0 && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--gray-light)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              {p.variations.map((v, i) => (
-                                <span key={i} style={{ background: 'rgba(212,168,67,0.05)', padding: '2px 6px', borderRadius: '3px', width: 'fit-content' }}>
-                                  {v.name}: <strong style={{ color: 'var(--gold)' }}>{v.stock}</strong>
+          return (
+            <>
+              {/* Catalog Search Bar */}
+              <div className="admin-search-wrap" style={{ marginBottom: '24px', maxWidth: '400px' }}>
+                <div className="shop-search-inner glass" style={{ padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}>
+                  <Search className="search-icon text-gold" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Search catalog by name, category..." 
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="shop-search-input"
+                    style={{ padding: '6px 0', fontSize: '0.9rem' }}
+                  />
+                  {productSearchQuery && (
+                    <button onClick={() => setProductSearchQuery('')} className="search-clear-btn" style={{ fontSize: '0.85rem' }}>✕</button>
+                  )}
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="admin-loading"><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60, marginBottom: 8 }} /><div className="skeleton" style={{ height: 60 }} /></div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                  <Package size={48} className="text-gold" style={{ display: 'block', margin: '0 auto 16px' }} />
+                  <h3>{products.length === 0 ? 'No Products' : 'No Results Match'}</h3>
+                  <p>{products.length === 0 ? 'Click "Add Product" to get started.' : 'Try adjusting your search criteria.'}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Media</th>
+                          <th>Name</th>
+                          <th>Price</th>
+                          <th>Category</th>
+                          <th>Stock</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedProducts.map(p => {
+                          const isOutOfStock = p.stock === undefined || p.stock <= 0;
+                          return (
+                            <tr key={p.id}>
+                              <td>
+                                <div className="table-thumb">
+                                  {p.mediaType === 'video' ? (
+                                    <video src={p.mediaUrl} muted />
+                                  ) : p.mediaUrl ? (
+                                    <img src={p.mediaUrl} alt={p.name} />
+                                  ) : (
+                                    <div className="thumb-placeholder">
+                                      <ImageIcon size={18} className="text-gray" />
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td><span className="table-name">{p.name}</span></td>
+                              <td><span className="table-price">₦{p.price.toLocaleString()}</span></td>
+                              <td><span className="table-category">{p.category}</span></td>
+                              <td>
+                                <span className={`table-stock ${isOutOfStock ? 'out-of-stock' : ''}`}>
+                                  {isOutOfStock ? 'Out of Stock' : `${p.stock} in stock`}
                                 </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button className="btn btn-outline btn-sm" onClick={() => setEditProduct(p)}>Edit</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(p.id)}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+                                {p.variations && p.variations.length > 0 && (
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--gray-light)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    {p.variations.map((v, i) => (
+                                      <span key={i} style={{ background: 'rgba(212,168,67,0.05)', padding: '2px 6px', borderRadius: '3px', width: 'fit-content' }}>
+                                        {v.name}: <strong style={{ color: 'var(--gold)' }}>{v.stock}</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <div className="table-actions">
+                                  <button className="btn btn-outline btn-sm" onClick={() => setEditProduct(p)}>Edit</button>
+                                  <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(p.id)}>Delete</button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {totalProductsPages > 1 && (
+                    <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '16px' }}>
+                      <button 
+                        onClick={() => setProductsPage(prev => Math.max(prev - 1, 1))} 
+                        disabled={currentProductsPage === 1}
+                        className="btn btn-outline btn-sm"
+                        style={{ minWidth: '80px' }}
+                      >
+                        Previous
+                      </button>
+                      {Array.from({ length: totalProductsPages }, (_, i) => i + 1).map(pageNum => (
+                        <button
+                          key={pageNum}
+                          onClick={() => setProductsPage(pageNum)}
+                          className={`btn btn-sm ${currentProductsPage === pageNum ? 'btn-gold' : 'btn-outline'}`}
+                          style={{ minWidth: '36px', padding: '6px' }}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+                      <button 
+                        onClick={() => setProductsPage(prev => Math.min(prev + 1, totalProductsPages))} 
+                        disabled={currentProductsPage === totalProductsPages}
+                        className="btn btn-outline btn-sm"
+                        style={{ minWidth: '80px' }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          );
+        })()
       )}
 
       {/* Orders Tab Rendering */}

@@ -28,6 +28,12 @@ export default function Shop() {
   const [requestProduct, setRequestProduct] = useState(null);
   const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
   const [sortBy, setSortBy] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination if category, search, or sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery, sortBy]);
 
   const handleAddToCart = (product, selectedVar = null) => {
     addToCart(product, selectedVar);
@@ -99,6 +105,14 @@ export default function Shop() {
     const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
     return timeB - timeA;
   });
+
+  // Pagination calculations
+  const itemsPerPage = 12;
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const currentShopPage = Math.min(currentPage, totalPages || 1);
+  const indexOfLastProduct = currentShopPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const paginatedProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
   return (
     <div className="shop-page">
@@ -182,18 +196,50 @@ export default function Shop() {
         )}
 
         {!loading && !error && sortedProducts.length > 0 && (
-          <div className="products-grid">
-            {sortedProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onOrder={handleOrderNow} 
-                onAddToCart={handleAddToCart}
-                onRequest={setRequestProduct}
-                onViewDetails={setSelectedDetailProduct}
-              />
-            ))}
-          </div>
+          <>
+            <div className="products-grid">
+              {paginatedProducts.map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onOrder={handleOrderNow} 
+                  onAddToCart={handleAddToCart}
+                  onRequest={setRequestProduct}
+                  onViewDetails={setSelectedDetailProduct}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '24px 0', marginTop: '32px' }}>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                  disabled={currentShopPage === 1}
+                  className="btn btn-outline btn-sm"
+                  style={{ minWidth: '80px' }}
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`btn btn-sm ${currentShopPage === pageNum ? 'btn-gold' : 'btn-outline'}`}
+                    style={{ minWidth: '36px', padding: '6px' }}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                  disabled={currentShopPage === totalPages}
+                  className="btn btn-outline btn-sm"
+                  style={{ minWidth: '80px' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
