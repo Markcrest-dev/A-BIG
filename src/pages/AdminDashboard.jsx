@@ -35,6 +35,10 @@ export default function AdminDashboard() {
   const { logout } = useAuth();
 
   // Search States
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [requestSearchQuery, setRequestSearchQuery] = useState('');
+
   // Products Pagination State
   const [productsPage, setProductsPage] = useState(1);
 
